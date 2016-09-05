@@ -1,4 +1,4 @@
-# Simple Node.js program to insert (csv) file into mysql database
+# Simple Node.js program to insert (csv) file/s into mysql database
 
 ## Installation 
 You need to run `npm install`
