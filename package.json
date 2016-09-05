@@ -1,0 +1,7 @@
+{
+  "name": "mysql-CSV",
+  "dependencies": {
+    "http": "^2",
+    "mysql": "^2.11.1"
+  }
+}
