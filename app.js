@@ -45,7 +45,7 @@ fs.readdir('./files/', 'utf8', (error, files) => {
         let csvFile = fs.readFileSync(`./files/${file}`, "utf8");
         // split each csv file at the new line
         csvFile = csvFile.split("\n");
-        let firstRow = csvFile[0].split(",").map(colName => colName.trim());
+        let firstRow = csvFile[0].split(",").map(colName => colName.trim()).map(colName => colName.replace(/"|'/g,""));
         firstRow = "(" + firstRow.join(" TEXT, ") + " TEXT)";
         csvFile = csvFile.slice(1).map(col => col.trim());
 
@@ -54,7 +54,7 @@ fs.readdir('./files/', 'utf8', (error, files) => {
 
             csvFile.forEach((row, index, array) => {
                 let colData = " (";
-                row = row.split(",").map(colName => colName.trim());
+                row = row.split(",").map(colName => colName.trim()).map(colName => colName.replace(/"|'/g,""));
                 for (let col of row) {
                     colData += "'" + col + "', ";
                 }

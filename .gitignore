@@ -3,3 +3,4 @@ lib/**/*.js
 lib/**/*.js.map
 spec/**/*.js
 spec/**/*.js.map
+files/**/*.csv
