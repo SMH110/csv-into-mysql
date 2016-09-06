@@ -1,7 +1,7 @@
 {
-  "name": "mysql-CSV",
+  "name": "csv-into-mysql",
+  "version": "0.0.1",
   "dependencies": {
-    "http": "^2",
     "mysql": "^2.11.1"
   }
 }
