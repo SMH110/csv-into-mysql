@@ -3,6 +3,8 @@ let reservedWords = require('./reserved-word-sql');
 let mysql = require('mysql');
 let counter = 0;
 
+const DB_CONFIG = require('./dbconfig.json');
+
 // function makes any unvaild csv's name valid
 function convertFileNameToTableName(file) {
     file = file.slice(0, -4);
@@ -41,13 +43,8 @@ fs.readdir('./files/', 'utf8', (error, files) => {
         let tableName = convertFileNameToTableName(file);
         let rows = csvFile.split("\n").map(row => row.trim());
         let columnNames = rows[0].split(",").map(colName => colName.trim() + ' TEXT');
-        
-        let connection = mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            password: "root",
-            database: "user_database"
-        });
+
+        let connection = mysql.createConnection(DB_CONFIG);
         connection.query(`CREATE TABLE ${tableName} (${columnNames.join()})`, error => {
             if (error) {
                 console.error(error);
@@ -60,11 +57,11 @@ fs.readdir('./files/', 'utf8', (error, files) => {
                 let rowValues = row.split(",").map(colName => `'${colName.trim()}'`);
 
                 connection.query(`INSERT INTO ${tableName} VALUES (${rowValues.join()})`, error => {
-                   // Close the connection once all queries are complete
+                    // Close the connection once all queries are complete
                     if (++completedQueryCount === rowsToInsert.length) {
                         connection.end();
                     }
-                    
+
                     if (error) {
                         console.error(error);
                         return;

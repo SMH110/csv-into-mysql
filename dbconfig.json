@@ -1,0 +1,6 @@
+{
+  "host": "localhost",
+  "user": "import_user",
+  "password": "password",
+  "database": "importsdb"
+}
