@@ -45,16 +45,16 @@ fs.readdir('./files/', 'utf8', (error, files) => {
         let columnNames = rows[0].split(",").map(colName => colName.trim() + ' TEXT');
 
         let connection = mysql.createConnection(DB_CONFIG);
-        connection.query(`CREATE TABLE ${tableName} (${columnNames.join()})`, error => {
+        connection.query(`CREATE TABLE ${tableName} (${columnNames.join().replace(/'|"/g,"")})`, error => {
             if (error) {
                 console.error(error);
                 return;
-            };
+            }
 
             let completedQueryCount = 0;
             let rowsToInsert = rows.slice(1);
             rowsToInsert.forEach(row => {
-                let rowValues = row.split(",").map(colName => `'${colName.trim()}'`);
+                let rowValues = row.split(",").map(colName => `'${colName.trim().replace(/'|"/g,"")}'`);
 
                 connection.query(`INSERT INTO ${tableName} VALUES (${rowValues.join()})`, error => {
                     // Close the connection once all queries are complete
