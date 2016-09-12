@@ -1,25 +1,14 @@
 let fs = require('fs'),
-    reservedWords = require('./reserved-word-sql'),
     mysql = require('mysql'),
-    parse = require('csv-parse'),
-    counter = 0;
+    parse = require('csv-parse');
+
 const DB_CONFIG = require('./dbconfig.json');
 
 // function makes any unvaild csv's name valid
 function convertFileNameToTableName(file) {
-    file = file.slice(0, -4);
-    file = file.replace(/[^\@\$\%\w_\s]/g, "");
-    if (/[^\w\$]/.test(file[(file.length) - 1])) {
-        file = file + "_" + counter++;
-    }
-    if (reservedWords.indexOf(file.toUpperCase()) > -1 || file.indexOf(" ") > -1) {
-        file = "`" + file + "`";
-    }
+    file = file.slice(0, -4).replace(/`/g, "``");
 
-    if (!file.length) {
-        file = "table" + counter++;
-    }
-    return file;
+    return "`" + file + "`";
 }
 
 // Enumerate all files inside the "files" folder
@@ -43,6 +32,10 @@ fs.readdir('./files/', 'utf8', (error, files) => {
         let connection = mysql.createConnection(DB_CONFIG);
 
         parse(csvFile, { columns: true }, (error, data) => {
+            if (error) {
+                console.error(error);
+                return;
+            }
 
             const colsName = Object.keys(data[0]);
             let createTable = `CREATE TABLE ${tableName} (`;
