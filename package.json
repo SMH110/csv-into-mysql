@@ -2,6 +2,7 @@
   "name": "csv-into-mysql",
   "version": "0.0.1",
   "dependencies": {
+    "csv-parse": "^1.1.7",
     "mysql": "^2.11.1"
   }
 }

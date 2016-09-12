@@ -1,8 +1,8 @@
-let fs = require('fs');
-let reservedWords = require('./reserved-word-sql');
-let mysql = require('mysql');
-let counter = 0;
-
+let fs = require('fs'),
+    reservedWords = require('./reserved-word-sql'),
+    mysql = require('mysql'),
+    parse = require('csv-parse'),
+    counter = 0;
 const DB_CONFIG = require('./dbconfig.json');
 
 // function makes any unvaild csv's name valid
@@ -39,33 +39,57 @@ fs.readdir('./files/', 'utf8', (error, files) => {
     // Loop on each csv file in order to insert it to mysql database
     csvFiles.forEach(file => {
         let csvFile = fs.readFileSync(`./files/${file}`, "utf8");
-
         let tableName = convertFileNameToTableName(file);
-        let rows = csvFile.split("\n").map(row => row.trim());
-        let columnNames = rows[0].split(",").map(colName => colName.trim() + ' TEXT');
-
         let connection = mysql.createConnection(DB_CONFIG);
-        connection.query(`CREATE TABLE ${tableName} (${columnNames.join().replace(/'|"/g,"")})`, error => {
-            if (error) {
-                console.error(error);
-                return;
+
+        parse(csvFile, { columns: true }, (error, data) => {
+
+            const colsName = Object.keys(data[0]);
+            let createTable = `CREATE TABLE ${tableName} (`;
+
+            // take care of any column contain " or ' or space 
+            if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
+                for (let column of colsName) {
+
+                    if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
+                        createTable += '`' + column + '`' + " TEXT, ";
+                    } else {
+                        createTable += column + " TEXT, ";
+                    }
+                }
+                createTable = createTable.slice(0, -2) + ")";
+            } else {
+                createTable += colsName.join(" TEXT, ") + " TEXT)";
             }
 
-            let completedQueryCount = 0;
-            let rowsToInsert = rows.slice(1);
-            rowsToInsert.forEach(row => {
-                let rowValues = row.split(",").map(colName => `'${colName.trim().replace(/'|"/g,"")}'`);
 
-                connection.query(`INSERT INTO ${tableName} VALUES (${rowValues.join()})`, error => {
-                    // Close the connection once all queries are complete
-                    if (++completedQueryCount === rowsToInsert.length) {
-                        connection.end();
+            connection.query(createTable, error => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                let completedQueryCount = 0;
+                data.forEach((row, index, array) => {
+                    let rowToInsert = [];
+                    for (let col in row) {
+                        rowToInsert.push(row[col]);
                     }
 
-                    if (error) {
-                        console.error(error);
-                        return;
-                    }
+                    connection.query(`INSERT INTO ${tableName} VALUES (${rowToInsert.map(x => {
+                        x = x.replace(/"/g, '\\"');
+                        return '"' + x + '"';
+                    }).join()})`, error => {
+                        // Close the connection once all queries are complete
+                        if (++completedQueryCount === array.length) {
+                            connection.end();
+                        }
+
+                        if (error) {
+                            console.error(error);
+                            return;
+                        }
+                    });
                 });
             });
         });
