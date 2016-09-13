@@ -12,6 +12,7 @@ function convertFileNameToTableName(file) {
     return "`" + file + "`";
 }
 
+
 let args = process.argv;
 
 if (args[2] === "--files") {
@@ -21,23 +22,20 @@ if (args[2] === "--files") {
     filesToInsert.forEach(file => {
         try {
             fs.statSync(`./${file}`);
-
         } catch (error) {
             console.error(new Error(`${file} not found!`));
-            notFounFiles.push(file)
+            notFounFiles.push(file);
         }
     });
 
     // select files which user specified and they was found; to Insert found files and to not get error 
-    filesToInsert = filesToInsert.filter(file => notFounFiles.indexOf(file) < 0);
+    if (notFounFiles.length) {
+        filesToInsert = filesToInsert.filter(file => notFounFiles.indexOf(file) < 0);
+    }
 
 } else {
     filesToInsert = fs.readdirSync('./files/', 'utf8');
 }
-
-
-// Enumerate all files inside the "files" folder
-
 
 // Filter csv files
 let csvFiles = filesToInsert.filter(file => /(\.csv)$/.test(file));
@@ -47,8 +45,6 @@ if (!csvFiles.length) {
 }
 
 // Loop on each csv file in order to insert it to mysql database
-
-
 csvFiles.forEach(file => {
     let csvFile;
     if (isUserSpecified) {
@@ -83,7 +79,6 @@ csvFiles.forEach(file => {
         } else {
             createTable += colsName.join(" TEXT, ") + " TEXT)";
         }
-
 
         connection.query(createTable, error => {
             if (error) {
