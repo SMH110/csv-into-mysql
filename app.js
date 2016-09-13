@@ -4,7 +4,10 @@ let fs = require('fs'),
     filesToInsert,
     isUserSpecified = false;
 
+
 const DB_CONFIG = require('./dbconfig.json');
+var connection = mysql.createConnection(DB_CONFIG);
+
 
 // function makes any unvaild csv's name valid
 function convertFileNameToTableName(file) {
@@ -12,12 +15,47 @@ function convertFileNameToTableName(file) {
     return "`" + file + "`";
 }
 
+function CreateTable(createTableQuery, parsedData, tableName, insertRows) {
+    connection.query(createTableQuery, error => {
+        if (error) {
+            console.error(error);
+            return;
+        }
+        insertRows(tableName, parsedData);
+    });
+}
+
+function insertRows(tableName, parsedData) {
+    let completedQueryCount = 0;
+    parsedData.forEach((row, index, array) => {
+        let rowToInsert = [];
+        for (let col in row) {
+            rowToInsert.push(row[col]);
+        }
+
+        connection.query(`INSERT INTO ${tableName} VALUES (${rowToInsert.map(x => {
+            x = x.replace(/"/g, '\\"');
+            return '"' + x + '"';
+        }).join()})`, error => {
+            // Close the connection once all queries are complete
+            if (++completedQueryCount === array.length) {
+                connection.end();
+            }
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+        });
+    });
+}
+
 
 let args = process.argv;
 
-if (args[2] === "--files") {
+if (args.indexOf('--files') > 0) {
     isUserSpecified = true;
-    filesToInsert = args.slice(3);
+    filesToInsert = args.slice(args.indexOf('--files') + 1);
     let notFounFiles = [];
     filesToInsert.forEach(file => {
         try {
@@ -45,6 +83,7 @@ if (!csvFiles.length) {
 }
 
 // Loop on each csv file in order to insert it to mysql database
+
 csvFiles.forEach(file => {
     let csvFile;
     if (isUserSpecified) {
@@ -54,7 +93,6 @@ csvFiles.forEach(file => {
     }
 
     let tableName = convertFileNameToTableName(file);
-    let connection = mysql.createConnection(DB_CONFIG);
 
     parse(csvFile, { columns: true }, (error, data) => {
         if (error) {
@@ -66,51 +104,54 @@ csvFiles.forEach(file => {
         let createTable = `CREATE TABLE ${tableName} (`;
 
         // take care of any column contain " or ' or space 
-        if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
-            for (let column of colsName) {
+        if (args[2] !== "--append") {
+            if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
+                for (let column of colsName) {
 
-                if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
-                    createTable += '`' + column + '`' + " TEXT, ";
-                } else {
-                    createTable += column + " TEXT, ";
+                    if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
+                        createTable += '`' + column + '`' + " TEXT, ";
+                    } else {
+                        createTable += column + " TEXT, ";
+                    }
                 }
+                createTable = createTable.slice(0, -2) + ")";
+            } else {
+                createTable += colsName.join(" TEXT, ") + " TEXT)";
             }
-            createTable = createTable.slice(0, -2) + ")";
-        } else {
-            createTable += colsName.join(" TEXT, ") + " TEXT)";
         }
 
-        connection.query(createTable, error => {
-            if (error) {
-                console.error(error);
-                return;
-            }
+        if (args[2] === "--overwrite") {
 
-            let completedQueryCount = 0;
-            data.forEach((row, index, array) => {
-                let rowToInsert = [];
-                for (let col in row) {
-                    rowToInsert.push(row[col]);
+            connection.query(`SHOW TABLES LIKE '${tableName.slice(1, -1).replace(/'/g, "\\'")}'`, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    return;
                 }
+                if (result.length) {
+                    connection.query(`DROP TABLE ` + tableName, error => {
+                        if (error) {
+                            console.error(error);
+                            return;
+                        }
 
-                connection.query(`INSERT INTO ${tableName} VALUES (${rowToInsert.map(x => {
-                    x = x.replace(/"/g, '\\"');
-                    return '"' + x + '"';
-                }).join()})`, error => {
-                    // Close the connection once all queries are complete
-                    if (++completedQueryCount === array.length) {
-                        connection.end();
-                    }
+                        CreateTable(createTable, data, tableName, insertRows);
 
-                    if (error) {
-                        console.error(error);
-                        return;
-                    }
-                });
+                    });
+                }
             });
-        });
+
+        } else if (args[2] === "--append") {
+
+            insertRows(tableName, data);
+
+        } else {
+
+            CreateTable(createTable, data, tableName, insertRows);
+
+        }
     });
 });
+
 
 
 
