@@ -9,65 +9,63 @@ var exec = exec;
 
 
 
-// describe('When the user puts csv files in the files folder', function () {
+describe('When the user puts csv files in the files folder', function () {
+    this.timeout(5000);
 
-//     describe('And runs the app.js from the command line', function () {
-//         beforeEach(function () {
+    describe('And runs the app.js from the command line', function () {
+        beforeEach(function () {
+            deleteTableIfExist();
 
-//             runProcess('node app.js --overwrite');
-//         });
-
-
-//         it('should do what...', function () {
-//             expect("SMH").to.be.equal("SMH");
-//         });
-//     });
+        });
 
 
+        afterEach(function () {
+            deleteTableIfExist();
 
-// });
+        });
+
+
+        it('Should insert the csv files to mysql', function () {
+            runProcess('node app.js');
+            expect("SMH").to.be.equal("SMH");
+        });
+    });
 
 
 
-
+});
 
 
 function runProcess(command) {
     return new Promise((resolve, reject) => {
         require('child_process').exec(command, (error, stdout, stderr) => {
             if (error) {
-                reject(error);
+                return void reject(error);
             }
-
-            if (stdout.on) {
-                stdout.on('data', console.log);
-            } else {
+            if (stdout) {
                 console.log(stdout);
             }
-
-            var errors = [];
-
-            if (stderr.on) {
-                stderr.on('data', data => errors.push(data));
-                stderr.on('close', errors.length ? reject(errors) : resolve());
-            } else {
-                reject(stderr);
+            if (stderr) {
+                return void reject(stderr);
             }
+            return void resolve();
         });
     });
 }
 
 
 function deleteTableIfExist() {
+
+    console.log("deleteTableIfExist have been run :)");
     fs.readdir('../files', 'utf8', (error, files) => {
         if (error) {
             console.error(error);
             return;
         }
-
+        let connection = mysql.createConnection(DB_CONFIG);
         files.forEach((file, index) => {
             let tableName = convertFileNameToTableName(file);
-            let connection = mysql.createConnection(DB_CONFIG);
+
             connection.query(`DROP TABLE IF EXISTS ${tableName}`, (error, result) => {
                 if (error) {
                     console.error(error);
@@ -84,9 +82,11 @@ function deleteTableIfExist() {
     });
 }
 
-deleteTableIfExist();
+
 
 function convertFileNameToTableName(file) {
     file = file.slice(0, -4).replace(/`/g, "``");
     return "`" + file + "`";
 }
+
+
