@@ -9,27 +9,27 @@ var exec = exec;
 
 
 
-describe('When the user puts csv files in the files folder', function () {
-    this.timeout(5000);
+// describe('When the user puts csv files in the files folder', function () {
+//     this.timeout(5000);
 
-    describe('And runs the app.js from the command line', function () {
-        beforeEach(function () {
-            deleteTableIfExist();
-            return runProcess('node app.js');
-        });
-
-
-        afterEach(function () {
-            deleteTableIfExist();
-        });
+//     describe('And runs the app.js from the command line', function () {
+//         beforeEach(function () {
+//             deleteTableIfExist();
+//             return runProcess('node app.js');
+//         });
 
 
-        it('should do what...', function () {
-            expect("SMH").to.be.equal("SMH");
-        });
-    });
-});
+//         afterEach(function () {
+//             deleteTableIfExist();
+//         });
 
+
+//         it('should do what...', function () {
+//             expect("SMH").to.be.equal("SMH");
+//         });
+//     });
+// });
+ deleteTableIfExist();
 
 function runProcess(command) {
     return new Promise((resolve, reject) => {
