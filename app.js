@@ -37,7 +37,7 @@ function insertRows(tableName, parsedData, counter) {
             return '"' + x + '"';
         }).join()})`, error => {
             // Close the connection once all queries are complete
-            if (++counter === array.length) {
+            if (++counter === parsedData.length) {
                 connection.end();
             }
 

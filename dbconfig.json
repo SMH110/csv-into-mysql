@@ -1,6 +1,6 @@
 {
   "host": "localhost",
-  "user": "root",
-  "password": "root",
+  "user": "user-name",
+  "password": "passowrd",
   "database": "importsdb"
 }
