@@ -15,24 +15,19 @@ describe('When the user puts csv files in the files folder', function () {
     describe('And runs the app.js from the command line', function () {
         beforeEach(function () {
             deleteTableIfExist();
-
+            return runProcess('node app.js');
         });
 
 
         afterEach(function () {
             deleteTableIfExist();
-
         });
 
 
-        it('Should insert the csv files to mysql', function () {
-            runProcess('node app.js');
+        it('should do what...', function () {
             expect("SMH").to.be.equal("SMH");
         });
     });
-
-
-
 });
 
 
