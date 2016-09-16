@@ -8,25 +8,24 @@ let fs = require('fs'),
 const DB_CONFIG = require('./dbconfig.json');
 var connection = mysql.createConnection(DB_CONFIG);
 
-
 // function makes any unvaild csv's name valid
 function convertFileNameToTableName(file) {
     file = file.slice(0, -4).replace(/`/g, "``");
     return "`" + file + "`";
 }
 
-function CreateTable(createTableQuery, parsedData, tableName, insertRows) {
+function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter) {
     connection.query(createTableQuery, error => {
         if (error) {
             console.error(error);
             return;
         }
-        insertRows(tableName, parsedData);
+        insertRows(tableName, parsedData, counter);
     });
 }
 
-function insertRows(tableName, parsedData) {
-    let completedQueryCount = 0;
+function insertRows(tableName, parsedData, counter) {
+
     parsedData.forEach((row, index, array) => {
         let rowToInsert = [];
         for (let col in row) {
@@ -38,7 +37,7 @@ function insertRows(tableName, parsedData) {
             return '"' + x + '"';
         }).join()})`, error => {
             // Close the connection once all queries are complete
-            if (++completedQueryCount === array.length) {
+            if (++counter === array.length) {
                 connection.end();
             }
 
@@ -102,8 +101,8 @@ csvFiles.forEach(file => {
 
         const colsName = Object.keys(data[0]);
         let createTable = `CREATE TABLE ${tableName} (`;
+        let completedQueryCount = 0;
 
-        // take care of any column contain " or ' or space 
         if (args[2] !== "--append") {
             if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
                 for (let column of colsName) {
@@ -134,23 +133,27 @@ csvFiles.forEach(file => {
                             return;
                         }
 
-                        CreateTable(createTable, data, tableName, insertRows);
+                        CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
 
                     });
+                } else {
+                    CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
                 }
             });
 
         } else if (args[2] === "--append") {
 
-            insertRows(tableName, data);
+            insertRows(tableName, data, completedQueryCount);
 
         } else {
 
-            CreateTable(createTable, data, tableName, insertRows);
+            CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
 
         }
     });
 });
+
+
 
 
 
