@@ -6,7 +6,7 @@ let fs = require('fs'),
 
 
 const DB_CONFIG = require('./dbconfig.json');
-var connection = mysql.createConnection(DB_CONFIG);
+
 
 // function makes any unvaild csv's name valid
 function convertFileNameToTableName(file) {
@@ -14,17 +14,17 @@ function convertFileNameToTableName(file) {
     return "`" + file + "`";
 }
 
-function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter) {
+function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter, connection) {
     connection.query(createTableQuery, error => {
         if (error) {
             console.error(error);
             return;
         }
-        insertRows(tableName, parsedData, counter);
+        insertRows(tableName, parsedData, counter, connection);
     });
 }
 
-function insertRows(tableName, parsedData, counter) {
+function insertRows(tableName, parsedData, counter, connection) {
 
     parsedData.forEach((row, index, array) => {
         let rowToInsert = [];
@@ -101,6 +101,7 @@ csvFiles.forEach(file => {
 
         const colsName = Object.keys(data[0]);
         let createTable = `CREATE TABLE ${tableName} (`;
+        var connection = mysql.createConnection(DB_CONFIG);
         let completedQueryCount = 0;
 
         if (args[2] !== "--append") {
@@ -133,21 +134,21 @@ csvFiles.forEach(file => {
                             return;
                         }
 
-                        CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
+                        CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
 
                     });
                 } else {
-                    CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
+                    CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
                 }
             });
 
         } else if (args[2] === "--append") {
 
-            insertRows(tableName, data, completedQueryCount);
+            insertRows(tableName, data, completedQueryCount, connection);
 
         } else {
 
-            CreateTable(createTable, data, tableName, insertRows, completedQueryCount);
+            CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
 
         }
     });
