@@ -6,6 +6,15 @@ let fs = require('fs'),
 
 
 const DB_CONFIG = require('./dbconfig.json');
+// let connection = mysql.createConnection(DB_CONFIG);
+// connection.query('SELECT * FROM `t1-root`', (error, data)=>{
+//     connection.end();
+//     if (error){
+//         console.log(error);
+//     }else{
+//         console.log(data);
+//     }
+// })
 
 
 // function makes any unvaild csv's name valid
@@ -55,19 +64,19 @@ let args = process.argv;
 if (args.indexOf('--files') > 0) {
     isUserSpecified = true;
     filesToInsert = args.slice(args.indexOf('--files') + 1);
-    let notFounFiles = [];
+    let notfoundFile = [];
     filesToInsert.forEach(file => {
         try {
             fs.statSync(`./${file}`);
         } catch (error) {
             console.error(new Error(`${file} not found!`));
-            notFounFiles.push(file);
+            notfoundFile.push(file);
         }
     });
 
     // select files which user specified and they was found; to Insert found files and to not get error 
-    if (notFounFiles.length) {
-        filesToInsert = filesToInsert.filter(file => notFounFiles.indexOf(file) < 0);
+    if (notfoundFile.length) {
+        filesToInsert = filesToInsert.filter(file => notfoundFile.indexOf(file) < 0);
     }
 
 } else {
@@ -153,9 +162,3 @@ csvFiles.forEach(file => {
         }
     });
 });
-
-
-
-
-
-

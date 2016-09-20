@@ -25,37 +25,25 @@ describe('When the user has csv files in the files folder', function () {
         });
 
         it('Should have inserted the t1 csv as expected', function (done) {
-            var connection = mysql.createConnection(DB_CONFIG);
-            connection.query('SELECT * FROM t1', (error, data) => {
-                connection.end();
-                if (error) {
-                    done(error);
-                }
-                expect(data).to.deep.equal([
-                    { '"id"': "1", 'first name': '"SMH"', "person's email": 'smh@email.com' },
-                    { '"id"': "2", 'first name': "MO'", "person's email": 'mo@email.com' },
-                    { '"id"': "3", 'first name': 'hello, world', "person's email": 'someemail@email.com' }
-                ]);
-                done();
-            });
+            connectAndQuery('SELECT * FROM t1')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { '"id"': "1", 'first name': '"SMH"', "person's email": 'smh@email.com' },
+                        { '"id"': "2", 'first name': "MO'", "person's email": 'mo@email.com' },
+                        { '"id"': "3", 'first name': 'hello, world', "person's email": 'someemail@email.com' }
+                    ]);
+                    done();
+                });
         });
 
         it('Should have inserted the t2 csv as expected', function (done) {
-            var connection = mysql.createConnection(DB_CONFIG);
-            connection.query('SELECT * FROM t2', (error, data) => {
-                connection.end();
-                if (error) {
-                    done(error);
-                }
-                expect(data).to.deep.equal([
-                    { 'COL1': '"Hello, World!"', 'COL2': '```' }
-                ]);
-                done();
-            });
-        });
-
-        it('should end the connection after finishing inserting the csv files', function () {
-
+            connectAndQuery('SELECT * FROM t2')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { 'COL1': '"Hello, World!"', 'COL2': '```' }
+                    ]);
+                    done();
+                });
         });
     });
 
@@ -66,48 +54,103 @@ describe('When the user has csv files in the files folder', function () {
         });
 
         it('Should have inserted the tr csv as expected', function (done) {
-            var connection = mysql.createConnection(DB_CONFIG);
-            connection.query('SELECT * FROM tr', (error, data) => {
-                connection.end();
-                if (error) {
-                    done(error);
-                }
-                expect(data).to.deep.equal([
-                    { '"id"': '1', 'first name': '"SMH"', 'person\'s email': 'smh@email.com' },
-                    { '"id"': '2', 'first name': 'MO\'', 'person\'s email': 'mo@email.com' },
-                    { '"id"': '3', 'first name': 'hello, world', 'person\'s email': 'someemail@email.com' },
-                    { '"id"': '4', 'first name': 'john', 'person\'s email': 'john@email.com' }
-                ]);
-                done();
-            });
+
+            connectAndQuery('SELECT * FROM tr')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { '"id"': '1', 'first name': '"SMH"', 'person\'s email': 'smh@email.com' },
+                        { '"id"': '2', 'first name': 'MO\'', 'person\'s email': 'mo@email.com' },
+                        { '"id"': '3', 'first name': 'hello, world', 'person\'s email': 'someemail@email.com' },
+                        { '"id"': '4', 'first name': 'john', 'person\'s email': 'john@email.com' }
+                    ]);
+                    done();
+                });
         });
 
         it('Should have not inserted t1 csv in the files folder', function (done) {
-            var connection = mysql.createConnection(DB_CONFIG);
-            connection.query('SHOW TABLES LIKE \'t1\'', (error, data) => {
-                connection.end();
-                if (error) {
-                    done(error);
-                }
-                expect(data.length).to.deep.equal(0);
-                done();
-            });
+
+            connectAndQuery('SHOW TABLES LIKE \'t1\'')
+                .then(data => {
+                    expect(data.length).to.deep.equal(0);
+                    done();
+                });
         });
 
         it('Should have not inserted t2 csv in the files folder', function (done) {
-            var connection = mysql.createConnection(DB_CONFIG);
-            connection.query('SHOW TABLES LIKE \'t2\'', (error, data) => {
-                connection.end();
-                if (error) {
-                    done(error);
-                }
-                expect(data.length).to.deep.equal(0);
-                done();
-            });
+
+            connectAndQuery('SHOW TABLES LIKE \'t2\'')
+                .then(data => {
+                    expect(data.length).to.deep.equal(0);
+                    done();
+                });
+        });
+    });
+
+    describe('When the user use the flag --append', function () {
+        beforeEach(function () {
+            return runCommand('node app.js');
         });
 
+        beforeEach(function () {
+            return runCommand('node app.js --append');
+        });
+
+        it('Should have appended the t1 csv as expected', function (done) {
+            connectAndQuery('SELECT * FROM t1')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { '"id"': '1', 'first name': '"SMH"', 'person\'s email': 'smh@email.com' },
+                        { '"id"': '2', 'first name': 'MO\'', 'person\'s email': 'mo@email.com' },
+                        { '"id"': '3', 'first name': 'hello, world', 'person\'s email': 'someemail@email.com' },
+                        { '"id"': '1', 'first name': '"SMH"', 'person\'s email': 'smh@email.com' },
+                        { '"id"': '2', 'first name': 'MO\'', 'person\'s email': 'mo@email.com' },
+                        { '"id"': '3', 'first name': 'hello, world', 'person\'s email': 'someemail@email.com' }
+                    ]);
+                    done();
+                });
+        });
+
+        it('Should have appended the t2 csv as expected', function (done) {
+            connectAndQuery('SELECT * FROM t2')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { COL1: '"Hello, World!"', COL2: '```' },
+                        { COL1: '"Hello, World!"', COL2: '```' }
+                    ]);
+                    done();
+                });
+        });
+    });
+
+    describe('When the user runs the app.js using the flag --overwrite', function () {
+        beforeEach(function () {
+            return runCommand('node app.js');
+        });
+
+        beforeEach(function () {
+            return runCommand('node app.js --overwrite --files t1.csv');
+        });
+
+        it('Should have overwritten t1 as expected', function (done) {
+            connectAndQuery('SELECT * FROM t1')
+                .then(data => {
+                    expect(data).to.deep.equal([
+                        { '"id"': '1', 'first name': '"SMH"', 'person\'s email': 'smh@email.com' },
+                        { '"id"': '2', 'first name': 'MO\'', 'person\'s email': 'mo@email.com' },
+                        { '"id"': '3', 'first name': 'hello, world', 'person\'s email': 'someemail@email.com' },
+                        { '"id"': '4', 'first name': 'john', 'person\'s email': 'john@email.com' }
+                    ]);
+                    done();
+                });
+        });
     });
 });
+
+
+
+
+
+
 
 function runCommand(command) {
     return new Promise((resolve, reject) => {
@@ -147,3 +190,18 @@ function ensureTablesRemoved(tables) {
         });
     });
 }
+
+
+function connectAndQuery(query) {
+    return new Promise((resolve, reject) => {
+        let connection = mysql.createConnection(DB_CONFIG);
+        connection.query(query, (error, data) => {
+            connection.end();
+            if (error) {
+                return void reject(error);
+            }
+            resolve(data);
+        });
+    });
+}
+
