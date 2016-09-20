@@ -88,11 +88,8 @@ describe('When the user has csv files in the files folder', function () {
 
     describe('When the user use the flag --append', function () {
         beforeEach(function () {
-            return runCommand('node app.js');
-        });
-
-        beforeEach(function () {
-            return runCommand('node app.js --append');
+            return runCommand('node app.js')
+                .then(() => runCommand('node app.js --append'));
         });
 
         it('Should have appended the t1 csv as expected', function (done) {
@@ -124,12 +121,10 @@ describe('When the user has csv files in the files folder', function () {
 
     describe('When the user runs the app.js using the flag --overwrite', function () {
         beforeEach(function () {
-            return runCommand('node app.js');
+            return runCommand('node app.js')
+                .then(() => runCommand('node app.js --overwrite --files t1.csv'));
         });
 
-        beforeEach(function () {
-            return runCommand('node app.js --overwrite --files t1.csv');
-        });
 
         it('Should have overwritten t1 as expected', function (done) {
             connectAndQuery('SELECT * FROM t1')

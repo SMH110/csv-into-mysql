@@ -6,18 +6,10 @@ let fs = require('fs'),
 
 
 const DB_CONFIG = require('./dbconfig.json');
-// let connection = mysql.createConnection(DB_CONFIG);
-// connection.query('SELECT * FROM `t1-root`', (error, data)=>{
-//     connection.end();
-//     if (error){
-//         console.log(error);
-//     }else{
-//         console.log(data);
-//     }
-// })
 
 
-// function makes any unvaild csv's name valid
+
+// function makes any invalid csv's name valid
 function convertFileNameToTableName(file) {
     file = file.slice(0, -4).replace(/`/g, "``");
     return "`" + file + "`";
@@ -64,19 +56,19 @@ let args = process.argv;
 if (args.indexOf('--files') > 0) {
     isUserSpecified = true;
     filesToInsert = args.slice(args.indexOf('--files') + 1);
-    let notfoundFile = [];
+    let notfoundFiles = [];
     filesToInsert.forEach(file => {
         try {
             fs.statSync(`./${file}`);
         } catch (error) {
             console.error(new Error(`${file} not found!`));
-            notfoundFile.push(file);
+            notfoundFiles.push(file);
         }
     });
 
     // select files which user specified and they was found; to Insert found files and to not get error 
-    if (notfoundFile.length) {
-        filesToInsert = filesToInsert.filter(file => notfoundFile.indexOf(file) < 0);
+    if (notfoundFiles.length) {
+        filesToInsert = filesToInsert.filter(file => notfoundFiles.indexOf(file) < 0);
     }
 
 } else {
