@@ -53,6 +53,79 @@ function insertRows(tableName, parsedData, counter, connection) {
 
 
 
+function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, insertRows) {
+    csvFiles.forEach(file => {
+        fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
+            if (error) {
+                console.error(error);
+                return;
+            }
+            let tableName = convertFileNameToTableName(file);
+            parse(csvFile, { columns: true }, (error, data) => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                const colsName = Object.keys(data[0]);
+                let createTableQuery = `CREATE TABLE ${tableName} (`;
+                let connection = mysql.createConnection(DB_CONFIG);
+                let completedQueryCount = 0;
+
+                if (insertingCase !== "--append") {
+                    if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
+                        for (let column of colsName) {
+
+                            if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
+                                createTableQuery += '`' + column + '`' + " TEXT, ";
+                            } else {
+                                createTableQuery += column + " TEXT, ";
+                            }
+                        }
+                        createTableQuery = createTableQuery.slice(0, -2) + ")";
+                    } else {
+                        createTableQuery += colsName.join(" TEXT, ") + " TEXT)";
+                    }
+                }
+                if (insertingCase === "--overwrite") {
+
+                    connection.query(`SHOW TABLES LIKE '${tableName.slice(1, -1).replace(/'/g, "\\'")}'`, (error, result) => {
+                        if (error) {
+                            console.error(error);
+                            return;
+                        }
+                        if (result.length) {
+                            connection.query(`DROP TABLE ` + tableName, error => {
+                                if (error) {
+                                    console.error(error);
+                                    return;
+                                }
+
+                                CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
+
+                            });
+                        } else {
+                            CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
+                        }
+                    });
+
+                } else if (insertingCase === "--append") {
+
+                    insertRows(tableName, data, completedQueryCount, connection);
+
+                } else {
+
+                    CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
+
+                }
+            });
+        });
+
+    });
+}
+
+
+
 let args = process.argv;
 let overwriteOrAppend = [];
 filesToInsert = [];
@@ -75,88 +148,21 @@ if (overwriteOrAppend.length) {
 
 if (isUserSpecifiedFilesToInsert) {
 
-    filesToInsert = filesToInsert;
+    readAndParseAndInsert(filesToInsert, "./", insertingCase, CreateTable, insertRows);
 } else {
-    filesToInsert = fs.readdirSync('./files/', 'utf8');
-}
-
-// Filter csv files
-let csvFiles = filesToInsert.filter(file => /(\.csv)$/.test(file));
-if (!csvFiles.length) {
-    console.error(new Error('No CSV files found'));
-    return;
-}
-
-// Loop on each csv file in order to insert it to mysql database
-
-csvFiles.forEach(file => {
-    let csvFile;
-    if (isUserSpecifiedFilesToInsert) {
-        csvFile = fs.readFileSync(`./${file}`, "utf8");
-    } else {
-        csvFile = fs.readFileSync(`./files/${file}`, "utf8");
-    }
-
-
-    let tableName = convertFileNameToTableName(file);
-
-
-    parse(csvFile, { columns: true }, (error, data) => {
+    fs.readdir('./files/', 'utf8', (error, files) => {
         if (error) {
             console.error(error);
             return;
         }
-
-        const colsName = Object.keys(data[0]);
-        let createTable = `CREATE TABLE ${tableName} (`;
-        var connection = mysql.createConnection(DB_CONFIG);
-        let completedQueryCount = 0;
-
-        if (insertingCase !== "--append") {
-            if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
-                for (let column of colsName) {
-
-                    if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
-                        createTable += '`' + column + '`' + " TEXT, ";
-                    } else {
-                        createTable += column + " TEXT, ";
-                    }
-                }
-                createTable = createTable.slice(0, -2) + ")";
-            } else {
-                createTable += colsName.join(" TEXT, ") + " TEXT)";
-            }
+        let csvFiles = files.filter(file => /(\.csv)$/.test(file));
+        if (!csvFiles.length) {
+            console.error(new Error('No CSV files found'));
+            return;
         }
-        if (insertingCase === "--overwrite") {
 
-            connection.query(`SHOW TABLES LIKE '${tableName.slice(1, -1).replace(/'/g, "\\'")}'`, (error, result) => {
-                if (error) {
-                    console.error(error);
-                    return;
-                }
-                if (result.length) {
-                    connection.query(`DROP TABLE ` + tableName, error => {
-                        if (error) {
-                            console.error(error);
-                            return;
-                        }
+        readAndParseAndInsert(csvFiles, "./files/", insertingCase, CreateTable, insertRows);
 
-                        CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
-
-                    });
-                } else {
-                    CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
-                }
-            });
-
-        } else if (insertingCase === "--append") {
-
-            insertRows(tableName, data, completedQueryCount, connection);
-
-        } else {
-
-            CreateTable(createTable, data, tableName, insertRows, completedQueryCount, connection);
-
-        }
     });
-});
+}
+
