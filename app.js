@@ -7,13 +7,16 @@ let fs = require('fs'),
 
 const DB_CONFIG = require('./dbconfig.json');
 
-
-
 // function makes any invalid csv's name valid
 function convertFileNameToTableName(file) {
+
+    if (file.indexOf("\\") > -1) {
+        file = file.slice(file.lastIndexOf("\\") + 1);
+    }
     file = file.slice(0, -4).replace(/`/g, "``");
     return "`" + file + "`";
 }
+
 
 function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter, connection) {
     connection.query(createTableQuery, error => {
@@ -89,24 +92,12 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
                 }
                 if (insertingCase === "--overwrite") {
 
-                    connection.query(`SHOW TABLES LIKE '${tableName.slice(1, -1).replace(/'/g, "\\'")}'`, (error, result) => {
+                    connection.query(`DROP TABLE IF EXISTS ${tableName.replace(/'/g, "\\'")}`, error => {
                         if (error) {
                             console.error(error);
                             return;
                         }
-                        if (result.length) {
-                            connection.query(`DROP TABLE ` + tableName, error => {
-                                if (error) {
-                                    console.error(error);
-                                    return;
-                                }
-
-                                CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
-
-                            });
-                        } else {
-                            CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
-                        }
+                        CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
                     });
 
                 } else if (insertingCase === "--append") {
@@ -120,10 +111,8 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
                 }
             });
         });
-
     });
 }
-
 
 
 let args = process.argv;
@@ -169,4 +158,3 @@ if (isUserSpecifiedFilesToInsert) {
 
     });
 }
-
