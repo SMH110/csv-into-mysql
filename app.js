@@ -116,23 +116,19 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
 
 
 let args = process.argv;
-let overwriteOrAppend = [];
 filesToInsert = [];
 for (let i = 2; i < args.length; i++) {
     if (args[i] === "--files") {
         isUserSpecifiedFilesToInsert = true;
     }
     if (args[i] === '--append' || args[i] === '--overwrite') {
-        overwriteOrAppend.push(args[i]);
+        insertingCase = args[i];
     }
     if (args[i].indexOf('.csv') > -1 && isUserSpecifiedFilesToInsert) {
         filesToInsert.push(args[i]);
     }
 }
 
-if (overwriteOrAppend.length) {
-    insertingCase = overwriteOrAppend[overwriteOrAppend.length - 1];
-}
 
 
 if (isUserSpecifiedFilesToInsert) {
