@@ -2,8 +2,8 @@ let fs = require('fs'),
     mysql = require('mysql'),
     parse = require('csv-parse'),
     filesToInsert,
-    isUserSpecified = false;
-
+    insertingCase,
+    isUserSpecifiedFilesToInsert = false;
 
 const DB_CONFIG = require('./dbconfig.json');
 
@@ -37,7 +37,6 @@ function insertRows(tableName, parsedData, counter, connection) {
             x = x.replace(/"/g, '\\"');
             return '"' + x + '"';
         }).join()})`, error => {
-            // Close the connection once all queries are complete
             if (++counter === parsedData.length) {
                 connection.end();
             }
@@ -51,26 +50,32 @@ function insertRows(tableName, parsedData, counter, connection) {
 }
 
 
+
+
+
 let args = process.argv;
-
-if (args.indexOf('--files') > 0) {
-    isUserSpecified = true;
-    filesToInsert = args.slice(args.indexOf('--files') + 1);
-    let notfoundFiles = [];
-    filesToInsert.forEach(file => {
-        try {
-            fs.statSync(`./${file}`);
-        } catch (error) {
-            console.error(new Error(`${file} not found!`));
-            notfoundFiles.push(file);
-        }
-    });
-
-    // select files which user specified and they was found; to Insert found files and to not get error 
-    if (notfoundFiles.length) {
-        filesToInsert = filesToInsert.filter(file => notfoundFiles.indexOf(file) < 0);
+let overwriteOrAppend = [];
+filesToInsert = [];
+for (let i = 2; i < args.length; i++) {
+    if (args[i] === "--files") {
+        isUserSpecifiedFilesToInsert = true;
     }
+    if (args[i] === '--append' || args[i] === '--overwrite') {
+        overwriteOrAppend.push(args[i]);
+    }
+    if (args[i].indexOf('.csv') > -1 && isUserSpecifiedFilesToInsert) {
+        filesToInsert.push(args[i]);
+    }
+}
 
+if (overwriteOrAppend.length) {
+    insertingCase = overwriteOrAppend[overwriteOrAppend.length - 1];
+}
+
+
+if (isUserSpecifiedFilesToInsert) {
+
+    filesToInsert = filesToInsert;
 } else {
     filesToInsert = fs.readdirSync('./files/', 'utf8');
 }
@@ -86,13 +91,15 @@ if (!csvFiles.length) {
 
 csvFiles.forEach(file => {
     let csvFile;
-    if (isUserSpecified) {
+    if (isUserSpecifiedFilesToInsert) {
         csvFile = fs.readFileSync(`./${file}`, "utf8");
     } else {
         csvFile = fs.readFileSync(`./files/${file}`, "utf8");
     }
 
+
     let tableName = convertFileNameToTableName(file);
+
 
     parse(csvFile, { columns: true }, (error, data) => {
         if (error) {
@@ -105,7 +112,7 @@ csvFiles.forEach(file => {
         var connection = mysql.createConnection(DB_CONFIG);
         let completedQueryCount = 0;
 
-        if (args[2] !== "--append") {
+        if (insertingCase !== "--append") {
             if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
                 for (let column of colsName) {
 
@@ -120,8 +127,7 @@ csvFiles.forEach(file => {
                 createTable += colsName.join(" TEXT, ") + " TEXT)";
             }
         }
-
-        if (args[2] === "--overwrite") {
+        if (insertingCase === "--overwrite") {
 
             connection.query(`SHOW TABLES LIKE '${tableName.slice(1, -1).replace(/'/g, "\\'")}'`, (error, result) => {
                 if (error) {
@@ -143,7 +149,7 @@ csvFiles.forEach(file => {
                 }
             });
 
-        } else if (args[2] === "--append") {
+        } else if (insertingCase === "--append") {
 
             insertRows(tableName, data, completedQueryCount, connection);
 
