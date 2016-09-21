@@ -147,8 +147,12 @@ if (overwriteOrAppend.length) {
 
 
 if (isUserSpecifiedFilesToInsert) {
-
-    readAndParseAndInsert(filesToInsert, "./", insertingCase, CreateTable, insertRows);
+    // in case if someone did : [node app.js --files] and runs the program
+    if (filesToInsert.length) {
+        readAndParseAndInsert(filesToInsert, "./", insertingCase, CreateTable, insertRows);
+    } else {
+        console.error(new Error('No CSV files specified'));
+    }
 } else {
     fs.readdir('./files/', 'utf8', (error, files) => {
         if (error) {
