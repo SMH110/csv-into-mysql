@@ -18,7 +18,7 @@ i.e. `--files a.csv b.csv c.csv` or specify them if they weren't in the root dir
 - Make sure your csv file(s) are valid
   - Columns should be separated by commas
   - The number of the columns should be consistent throughout the file
-  ### Inserting type
+### Inserting type
   - If you wanted to overwrite an exist mysql table with new csv file; you can use the `--overwrite` flag i.e. `node app.js --overwrite`
   - If you wanted to append an exist mysql table with a csv file; you can use the `--append` flag i.e. `node app.js --append`
 
