@@ -1,7 +1,6 @@
 let fs = require('fs'),
     mysql = require('mysql'),
     parse = require('csv-parse'),
-    filesToInsert,
     insertingCase,
     isUserSpecifiedFilesToInsert = false;
 
@@ -13,10 +12,14 @@ function convertFileNameToTableName(file) {
     if (file.indexOf("\\") > -1) {
         file = file.slice(file.lastIndexOf("\\") + 1);
     }
+
+    if (file.indexOf("/") > -1) {
+        file = file.slice(file.lastIndexOf("/") + 1);
+    }
+
     file = file.slice(0, -4).replace(/`/g, "``");
     return "`" + file + "`";
 }
-
 
 function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter, connection) {
     connection.query(createTableQuery, error => {
@@ -51,10 +54,6 @@ function insertRows(tableName, parsedData, counter, connection) {
         });
     });
 }
-
-
-
-
 
 function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, insertRows) {
     csvFiles.forEach(file => {
@@ -114,9 +113,8 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
     });
 }
 
-
-let args = process.argv;
-filesToInsert = [];
+let args = process.argv,
+    filesToInsert = [];
 for (let i = 2; i < args.length; i++) {
     if (args[i] === "--files") {
         isUserSpecifiedFilesToInsert = true;
@@ -124,11 +122,10 @@ for (let i = 2; i < args.length; i++) {
     if (args[i] === '--append' || args[i] === '--overwrite') {
         insertingCase = args[i];
     }
-    if (args[i].indexOf('.csv') > -1 && isUserSpecifiedFilesToInsert) {
+    if ((args[i].indexOf('.csv') > -1 || args[i].indexOf('.txt') > -1) && isUserSpecifiedFilesToInsert) {
         filesToInsert.push(args[i]);
     }
 }
-
 
 
 if (isUserSpecifiedFilesToInsert) {
@@ -136,17 +133,17 @@ if (isUserSpecifiedFilesToInsert) {
     if (filesToInsert.length) {
         readAndParseAndInsert(filesToInsert, "./", insertingCase, CreateTable, insertRows);
     } else {
-        console.error(new Error('No CSV files specified'));
+        console.error(new Error('No CSV or TXT files specified'));
     }
 } else {
-    fs.readdir('./files/', 'utf8', (error, files) => {
+    fs.readdir('./files/', (error, files) => {
         if (error) {
             console.error(error);
             return;
         }
-        let csvFiles = files.filter(file => /(\.csv)$/.test(file));
+        let csvFiles = files.filter(file => /(\.csv)$/.test(file) || /(\.txt)$/.test(file));
         if (!csvFiles.length) {
-            console.error(new Error('No CSV files found'));
+            console.error(new Error('No CSV or TXT files found'));
             return;
         }
 
