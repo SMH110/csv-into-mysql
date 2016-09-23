@@ -5,7 +5,7 @@ const fs = require('fs'),
     DB_CONFIG = require('../dbconfig.json'),
     sinon = require('sinon');
 
-describe('When the user has csv files in the files folder', function () {
+describe('When the user has some csv or txt files to insert', function () {
     this.timeout(10000);
 
     beforeEach(function () {
@@ -22,7 +22,7 @@ describe('When the user has csv files in the files folder', function () {
         ]);
     });
 
-    describe('And runs the app.js from the command line with no options', function () {
+    describe('When the user has some csv files in the files folder and runs the app.js from the command line with no options', function () {
         beforeEach(() => {
             return runCommand('node app.js');
         });
@@ -182,7 +182,7 @@ describe('When the user has csv files in the files folder', function () {
     });
 
 
-    describe('When the user user the --append flag after --files flag', function () {
+    describe('When the user uses the --append flag after --files flag', function () {
         beforeEach(function () {
             return runCommand('node app.js --files specs/data/append/jan/transactions.csv')
                 .then(() => runCommand('node app.js --files specs/data/append/feb/transactions.csv --append'));
@@ -199,7 +199,7 @@ describe('When the user has csv files in the files folder', function () {
         });
     });
 
-    describe('When the user use the --overwrite flag before the --files flag', function () {
+    describe('When the user uses the --overwrite flag before the --files flag', function () {
         beforeEach(function () {
             return runCommand('node app.js --files specs/data/overwrite/march/users.csv')
                 .then(() => runCommand('node app.js --overwrite --files specs/data/overwrite/april/users.csv'));
@@ -216,7 +216,7 @@ describe('When the user has csv files in the files folder', function () {
         });
     });
 
-    describe('When the user use the --overwrite flag after the --files flag', function () {
+    describe('When the user uses the --overwrite flag after the --files flag', function () {
         beforeEach(function () {
             return runCommand('node app.js --files specs/data/overwrite/march/users.csv')
                 .then(() => runCommand('node app.js --files specs/data/overwrite/april/users.csv --overwrite'));
