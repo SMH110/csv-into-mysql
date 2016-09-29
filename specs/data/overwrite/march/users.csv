@@ -1,3 +1,0 @@
-id,test type
-1,node app.js  --files specs/data/overwrite/march/transactions.csv
-2,node app.js  --files specs/data/overwrite/april/transactions.csv --overwrite

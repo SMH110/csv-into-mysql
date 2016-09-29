@@ -10,15 +10,15 @@ describe('When the user has some csv or txt files to insert', function () {
 
     beforeEach(function () {
         return ensureTablesRemoved([
-            't1', 't2', 'tr', 'path_test', 'transactions',
-            'users', 'countries', 'test1', 'test2'
+            't1', 't2', 'tr', 'names', 'people',
+            'languages', 'countries', 'test1', 'test2'
         ]);
     });
 
     afterEach(function () {
         return ensureTablesRemoved([
-            't1', 't2', 'tr', 'path_test', 'transactions',
-            'users', 'countries', 'test1', 'test2'
+            't1', 't2', 'tr', 'names', 'people',
+            'languages', 'countries', 'test1', 'test2'
         ]);
     });
 
@@ -92,20 +92,20 @@ describe('When the user has some csv or txt files to insert', function () {
 
     describe('When the user use the --files flag followed by path to csv file', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/path_test.csv');
+            return runCommand('node app.js --files specs/data/path_test/names.csv');
         });
 
         it('Should have inserted the path_test as expected', function () {
-            return connectAndQuery('SELECT * FROM `path_test`')
+            return connectAndQuery('SELECT * FROM names')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'id': '1', 'test type': 'test node app.js --files spec/data/path_test.csv' }
-                    ]);
+                    expect(data).to.deep.equal([{ id: '1', name: 'Sam Pauline' },
+                    { id: '2', name: 'Kristen Cumberbatch' },
+                    { id: '3', name: 'Roy Borne' }]);
                 });
         });
 
         it('Should have extracted the file name from the path', function () {
-            return connectAndQuery(`SHOW TABLES LIKE 'path_test'`)
+            return connectAndQuery(`SHOW TABLES LIKE 'names'`)
                 .then(table => {
                     expect(table.length).to.not.be.empty;
                 });
@@ -166,17 +166,69 @@ describe('When the user has some csv or txt files to insert', function () {
 
     describe('When the user user the --append flag before --files flag', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/append/jan/transactions.csv')
-                .then(() => runCommand('node app.js --append --files specs/data/append/feb/transactions.csv'));
+            return runCommand('node app.js --files specs/data/append/jan/people.csv')
+                .then(() => runCommand('node app.js --append --files specs/data/append/feb/people.csv'));
         });
 
         it('Should have appended the data as expected', function () {
-            return connectAndQuery('SELECT * FROM transactions')
+            return connectAndQuery('SELECT * FROM people')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'id': '1', 'Command': 'node app.js  --files specs/data/append/jan/transactions.csv' },
-                        { 'id': '2', 'Command': 'node app.js --append --files specs/data/append/feb/transactions.csv' },
-                        { 'id': '3', 'Command': 'I have been appended' }]);
+                    expect(data).to.deep.equal([{
+                        id: '1',
+                        first_name: 'Roy',
+                        last_name: 'Howell',
+                        email: 'rhowell0@simplemachines.org',
+                        gender: 'Male',
+                        ip_address: '138.0.91.197'
+                    },
+                    {
+                        id: '2',
+                        first_name: 'Teresa',
+                        last_name: 'Austin',
+                        email: 'taustin1@bbc.co.uk',
+                        gender: 'Female',
+                        ip_address: '104.140.233.171'
+                    },
+                    {
+                        id: '3',
+                        first_name: 'Jacqueline',
+                        last_name: 'Anderson',
+                        email: 'janderson2@technorati.com',
+                        gender: 'Female',
+                        ip_address: '215.44.38.175'
+                    },
+                    {
+                        id: '4',
+                        first_name: 'Arthur',
+                        last_name: 'Perry',
+                        email: 'aperry3@livejournal.com',
+                        gender: 'Male',
+                        ip_address: '236.67.203.238'
+                    },
+                    {
+                        id: '5',
+                        first_name: 'Carolyn',
+                        last_name: 'Gray',
+                        email: 'cgray4@nature.com',
+                        gender: 'Female',
+                        ip_address: '133.169.61.89'
+                    },
+                    {
+                        id: '6',
+                        first_name: 'Mat',
+                        last_name: 'jackson',
+                        email: 'mmjj@hotmail.com',
+                        gender: 'Male',
+                        ip_address: '129.168.1.11'
+                    },
+                    {
+                        id: '7',
+                        first_name: 'Hope',
+                        last_name: 'Kate',
+                        email: 'hope222@hotmail.com',
+                        gender: 'Female',
+                        ip_address: '233.55.66.1'
+                    }]);
                 });
         });
     });
@@ -184,51 +236,99 @@ describe('When the user has some csv or txt files to insert', function () {
 
     describe('When the user uses the --append flag after --files flag', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/append/jan/transactions.csv')
-                .then(() => runCommand('node app.js --files specs/data/append/feb/transactions.csv --append'));
+            return runCommand('node app.js --files specs/data/append/jan/people.csv')
+                .then(() => runCommand('node app.js --files specs/data/append/feb/people.csv --append'));
         });
 
         it('Should have appended the data as expected', function () {
-            return connectAndQuery('SELECT * FROM transactions')
+            return connectAndQuery('SELECT * FROM people')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'id': '1', 'Command': 'node app.js  --files specs/data/append/jan/transactions.csv' },
-                        { 'id': '2', 'Command': 'node app.js --append --files specs/data/append/feb/transactions.csv' },
-                        { 'id': '3', 'Command': 'I have been appended' }]);
+                    expect(data).to.deep.equal([{
+                        id: '1',
+                        first_name: 'Roy',
+                        last_name: 'Howell',
+                        email: 'rhowell0@simplemachines.org',
+                        gender: 'Male',
+                        ip_address: '138.0.91.197'
+                    },
+                    {
+                        id: '2',
+                        first_name: 'Teresa',
+                        last_name: 'Austin',
+                        email: 'taustin1@bbc.co.uk',
+                        gender: 'Female',
+                        ip_address: '104.140.233.171'
+                    },
+                    {
+                        id: '3',
+                        first_name: 'Jacqueline',
+                        last_name: 'Anderson',
+                        email: 'janderson2@technorati.com',
+                        gender: 'Female',
+                        ip_address: '215.44.38.175'
+                    },
+                    {
+                        id: '4',
+                        first_name: 'Arthur',
+                        last_name: 'Perry',
+                        email: 'aperry3@livejournal.com',
+                        gender: 'Male',
+                        ip_address: '236.67.203.238'
+                    },
+                    {
+                        id: '5',
+                        first_name: 'Carolyn',
+                        last_name: 'Gray',
+                        email: 'cgray4@nature.com',
+                        gender: 'Female',
+                        ip_address: '133.169.61.89'
+                    },
+                    {
+                        id: '6',
+                        first_name: 'Mat',
+                        last_name: 'jackson',
+                        email: 'mmjj@hotmail.com',
+                        gender: 'Male',
+                        ip_address: '129.168.1.11'
+                    },
+                    {
+                        id: '7',
+                        first_name: 'Hope',
+                        last_name: 'Kate',
+                        email: 'hope222@hotmail.com',
+                        gender: 'Female',
+                        ip_address: '233.55.66.1'
+                    }]);
                 });
         });
     });
 
     describe('When the user uses the --overwrite flag before the --files flag', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/overwrite/march/users.csv')
-                .then(() => runCommand('node app.js --overwrite --files specs/data/overwrite/april/users.csv'));
+            return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
+                .then(() => runCommand('node app.js --overwrite --files specs/data/overwrite/april/languages.csv'));
         });
 
         it('Should have overwritten the table as expected', function () {
-            return connectAndQuery('SELECT * FROM users')
+            return connectAndQuery('SELECT * FROM languages')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'id': '1', 'test type': 'node app.js  --files specs/data/overwrite/march/users.csv' },
-                        { 'id': '2', 'test type': 'node app.js --overwrite --files specs/data/overwrite/april/users.csv' },
-                        { 'id': '3', 'test type': 'I have been overwritten ' }]);
+                    expect(data).to.deep.equal([{ ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
+                    { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }]);
                 });
         });
     });
 
     describe('When the user uses the --overwrite flag after the --files flag', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/overwrite/march/users.csv')
-                .then(() => runCommand('node app.js --files specs/data/overwrite/april/users.csv --overwrite'));
+            return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
+                .then(() => runCommand('node app.js --files specs/data/overwrite/april/languages.csv --overwrite'));
         });
 
         it('Should have overwritten the table as expected', function () {
-            return connectAndQuery('SELECT * FROM users')
+            return connectAndQuery('SELECT * FROM languages')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'id': '1', 'test type': 'node app.js  --files specs/data/overwrite/march/users.csv' },
-                        { 'id': '2', 'test type': 'node app.js --overwrite --files specs/data/overwrite/april/users.csv' },
-                        { 'id': '3', 'test type': 'I have been overwritten ' }]);
+                    expect(data).to.deep.equal([{ ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
+                    { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }]);
                 });
         });
     });
@@ -242,10 +342,9 @@ describe('When the user has some csv or txt files to insert', function () {
         it('Should have been inserted the countries file as expected', function () {
             return connectAndQuery('SELECT * FROM countries')
                 .then(data => {
-                    expect(data).to.deep.equal([
-                        { 'COUNTRY': 'Australia', 'ISO CODES': '61' },
-                        { 'COUNTRY': 'Bengaldesh', 'ISO CODES': '880' }
-                    ]);
+                    expect(data).to.deep.equal([{ ID: '1', COUNTRY: 'United States', 'ISO CODES': 'US / USA' },
+                    { ID: '2', COUNTRY: 'United Kingdom', 'ISO CODES': 'GB / GBR' },
+                    { ID: '3', COUNTRY: 'France', 'ISO CODES': 'FR / FRA' }]);
                 });
         });
 

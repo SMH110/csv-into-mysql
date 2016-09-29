@@ -13,7 +13,7 @@ c:\mysql\bin\mysql --user=root --execute="CREATE USER 'import_user'@'localhost' 
 ## Usage
 - Make sure MySQL is running
 - Put any csv file(s) in the `files` folder, then run `node app.js`
-- If you wanted to import a specific file(s); you can put them in the root directory then user `--files` flag followed by the files you want to import
+- If you wanted to import a specific file(s); you can put them in the root directory then use `--files` flag followed by the files you want to import
 i.e. `--files a.csv b.csv c.csv` or specify them if they weren't in the root directory i.e. `--files ../../csv_files/test.csv ../transactions/june/some.csv`
 - Make sure your csv file(s) are valid
   - Columns should be separated by commas
