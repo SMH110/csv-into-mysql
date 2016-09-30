@@ -1,25 +1,24 @@
 const fs = require('fs'),
     mysql = require('mysql'),
-    parse = require('csv-parse'),
     expect = require('chai').expect,
-    DB_CONFIG = require('../dbconfig.json'),
-    sinon = require('sinon');
+    DB_CONFIG = require('../dbconfig.json');
+
 
 describe('When the user has some csv or txt files to insert', function () {
-    this.timeout(10000);
+    this.timeout(5000);
 
     beforeEach(function () {
         return ensureTablesRemoved([
-            't1', 't2', 'tr', 'names', 'people',
-            'languages', 'countries', 'test1', 'test2'
-        ]);
+            't1', 't2', 'tr', 'test1', 'test2']
+
+        );
     });
 
     afterEach(function () {
         return ensureTablesRemoved([
-            't1', 't2', 'tr', 'names', 'people',
-            'languages', 'countries', 'test1', 'test2'
-        ]);
+            't1', 't2', 'tr', 'test1', 'test2']
+
+        );
     });
 
     describe('When the user has some csv files in the files folder and runs the app.js from the command line with no options', function () {
@@ -46,7 +45,7 @@ describe('When the user has some csv or txt files to insert', function () {
             return connectAndQuery('SELECT * FROM t2')
                 .then(data => {
                     expect(data).to.deep.equal([
-                        { 'COL1': '"Hello, World!"', 'COL2': '```' }
+                        { COL1: '"Hello, World!"', COL2: '```' }
                     ]);
 
                 });
@@ -91,8 +90,16 @@ describe('When the user has some csv or txt files to insert', function () {
 
 
     describe('When the user use the --files flag followed by path to csv file', function () {
+
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/path_test/names.csv');
+            return ensureTablesRemoved(['names'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/path_test/names.csv');
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['names']);
         });
 
         it('Should have inserted the path_test as expected', function () {
@@ -165,9 +172,17 @@ describe('When the user has some csv or txt files to insert', function () {
 
 
     describe('When the user user the --append flag before --files flag', function () {
+
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/append/jan/people.csv')
-                .then(() => runCommand('node app.js --append --files specs/data/append/feb/people.csv'));
+            return ensureTablesRemoved(['people'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/append/jan/people.csv')
+                        .then(() => runCommand('node app.js --append --files specs/data/append/feb/people.csv'));
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['people']);
         });
 
         it('Should have appended the data as expected', function () {
@@ -236,8 +251,15 @@ describe('When the user has some csv or txt files to insert', function () {
 
     describe('When the user uses the --append flag after --files flag', function () {
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/append/jan/people.csv')
-                .then(() => runCommand('node app.js --files specs/data/append/feb/people.csv --append'));
+            return ensureTablesRemoved(['people'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/append/jan/people.csv')
+                        .then(() => runCommand('node app.js --files specs/data/append/feb/people.csv --append'));
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['people']);
         });
 
         it('Should have appended the data as expected', function () {
@@ -304,31 +326,51 @@ describe('When the user has some csv or txt files to insert', function () {
     });
 
     describe('When the user uses the --overwrite flag before the --files flag', function () {
+
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
-                .then(() => runCommand('node app.js --overwrite --files specs/data/overwrite/april/languages.csv'));
+            return ensureTablesRemoved(['languages'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
+                        .then(() => runCommand('node app.js --overwrite --files specs/data/overwrite/april/languages.csv'));
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['languages']);
         });
 
         it('Should have overwritten the table as expected', function () {
             return connectAndQuery('SELECT * FROM languages')
                 .then(data => {
-                    expect(data).to.deep.equal([{ ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
-                    { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }]);
+                    expect(data).to.deep.equal([
+                        { ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
+                        { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }
+                    ]);
                 });
         });
     });
 
     describe('When the user uses the --overwrite flag after the --files flag', function () {
+
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
-                .then(() => runCommand('node app.js --files specs/data/overwrite/april/languages.csv --overwrite'));
+            return ensureTablesRemoved(['languages'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/overwrite/march/languages.csv')
+                        .then(() => runCommand('node app.js --files specs/data/overwrite/april/languages.csv --overwrite'));
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['languages']);
         });
 
         it('Should have overwritten the table as expected', function () {
             return connectAndQuery('SELECT * FROM languages')
                 .then(data => {
-                    expect(data).to.deep.equal([{ ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
-                    { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }]);
+                    expect(data).to.deep.equal([
+                        { ID: '1', 'LANGAUGE NAME': 'French', 'ISO 639-3': ' fra' },
+                        { ID: '2', 'LANGAUGE NAME': ' Hindi', 'ISO 639-3': ' hin' }
+                    ]);
                 });
         });
     });
@@ -336,7 +378,14 @@ describe('When the user has some csv or txt files to insert', function () {
     describe('When the user specify a txt file to be inserted', function () {
 
         beforeEach(function () {
-            return runCommand('node app.js --files specs/data/text_file/countries.txt');
+            return ensureTablesRemoved(['countries'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/text_file/countries.txt');
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['countries']);
         });
 
         it('Should have been inserted the countries file as expected', function () {
