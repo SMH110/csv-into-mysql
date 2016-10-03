@@ -19,19 +19,19 @@ function convertFileNameToTableName(file) {
     return "`" + file + "`";
 }
 
-function createTable(createTableQuery, parsedData, tableName, counter, connection) {
+function createTable(createTableQuery, parsedData, tableName, connection) {
     connection.query(createTableQuery, error => {
         if (error) {
             // If there is an error creating the table the connection never gets closed
             console.error(error);
             return;
         }
-        insertRows(tableName, parsedData, counter, connection);
+        insertRows(tableName, parsedData, connection);
     });
 }
 
-function insertRows(tableName, parsedData, counter, connection) {
-
+function insertRows(tableName, parsedData, connection) {
+    let counter = 0;
     parsedData.forEach(row => {
         let rowToInsert = [];
         for (let col in row) {
@@ -71,7 +71,6 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                 const colsName = Object.keys(data[0]);
                 let createTableQuery = `CREATE TABLE ${tableName} (`;
                 let connection = mysql.createConnection(DB_CONFIG);
-                let completedQueryCount = 0;
 
                 if (insertingCase !== "--append") {
                     if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
@@ -89,23 +88,17 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                     }
                 }
                 if (insertingCase === "--overwrite") {
-
                     connection.query(`DROP TABLE IF EXISTS ${tableName.replace(/'/g, "\\'")}`, error => {
                         if (error) {
                             console.error(error);
                             return;
                         }
-                        createTable(createTableQuery, data, tableName, completedQueryCount, connection);
+                        createTable(createTableQuery, data, tableName, connection);
                     });
-
                 } else if (insertingCase === "--append") {
-
-                    insertRows(tableName, data, completedQueryCount, connection);
-
+                    insertRows(tableName, data, connection);
                 } else {
-
-                    createTable(createTableQuery, data, tableName, completedQueryCount, connection);
-
+                    createTable(createTableQuery, data, tableName, connection);
                 }
             });
         });
