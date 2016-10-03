@@ -1,4 +1,0 @@
-{
-  "esnext": true, // ES6 syntax support
-  "node": true
-}
