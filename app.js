@@ -22,6 +22,7 @@ function convertFileNameToTableName(file) {
 function createTable(createTableQuery, parsedData, tableName, counter, connection) {
     connection.query(createTableQuery, error => {
         if (error) {
+            // If there is an error creating the table the connection never gets closed
             console.error(error);
             return;
         }
@@ -31,7 +32,7 @@ function createTable(createTableQuery, parsedData, tableName, counter, connectio
 
 function insertRows(tableName, parsedData, counter, connection) {
 
-    parsedData.forEach((row, index, array) => {
+    parsedData.forEach(row => {
         let rowToInsert = [];
         for (let col in row) {
             rowToInsert.push(row[col]);
