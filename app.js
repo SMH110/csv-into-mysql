@@ -1,8 +1,6 @@
 let fs = require('fs'),
     mysql = require('mysql'),
-    parse = require('csv-parse'),
-    insertingCase,
-    isUserSpecifiedFilesToInsert = false;
+    parse = require('csv-parse');
 
 const DB_CONFIG = require('./dbconfig.json');
 
@@ -21,7 +19,7 @@ function convertFileNameToTableName(file) {
     return "`" + file + "`";
 }
 
-function CreateTable(createTableQuery, parsedData, tableName, insertRows, counter, connection) {
+function createTable(createTableQuery, parsedData, tableName, counter, connection) {
     connection.query(createTableQuery, error => {
         if (error) {
             console.error(error);
@@ -55,7 +53,7 @@ function insertRows(tableName, parsedData, counter, connection) {
     });
 }
 
-function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, insertRows) {
+function readAndParseAndInsert(csvFiles, path, insertingCase) {
     csvFiles.forEach(file => {
         fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
             if (error) {
@@ -96,7 +94,7 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
                             console.error(error);
                             return;
                         }
-                        CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
+                        createTable(createTableQuery, data, tableName, completedQueryCount, connection);
                     });
 
                 } else if (insertingCase === "--append") {
@@ -105,7 +103,7 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
 
                 } else {
 
-                    CreateTable(createTableQuery, data, tableName, insertRows, completedQueryCount, connection);
+                    createTable(createTableQuery, data, tableName, completedQueryCount, connection);
 
                 }
             });
@@ -113,8 +111,12 @@ function readAndParseAndInsert(csvFiles, path, insertingCase, CreateTable, inser
     });
 }
 
+let insertingCase,
+    isUserSpecifiedFilesToInsert = false;
+
 let args = process.argv,
     filesToInsert = [];
+
 for (let i = 2; i < args.length; i++) {
     if (args[i] === "--files") {
         isUserSpecifiedFilesToInsert = true;
@@ -131,7 +133,7 @@ for (let i = 2; i < args.length; i++) {
 if (isUserSpecifiedFilesToInsert) {
     // in case if someone did : [node app.js --files] and runs the program
     if (filesToInsert.length) {
-        readAndParseAndInsert(filesToInsert, "./", insertingCase, CreateTable, insertRows);
+        readAndParseAndInsert(filesToInsert, "./", insertingCase);
     } else {
         console.error(new Error('No CSV or TXT files specified'));
     }
@@ -147,7 +149,7 @@ if (isUserSpecifiedFilesToInsert) {
             return;
         }
 
-        readAndParseAndInsert(csvFiles, "./files/", insertingCase, CreateTable, insertRows);
+        readAndParseAndInsert(csvFiles, "./files/", insertingCase);
 
     });
 }
