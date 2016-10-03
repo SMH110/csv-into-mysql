@@ -1,5 +1,4 @@
-const fs = require('fs'),
-    mysql = require('mysql'),
+const mysql = require('mysql'),
     expect = require('chai').expect,
     DB_CONFIG = require('../dbconfig.json');
 
@@ -88,7 +87,6 @@ describe('When the user has some csv or txt files to insert', function () {
         });
     });
 
-
     describe('When the user use the --files flag followed by path to csv file', function () {
 
         beforeEach(function () {
@@ -170,7 +168,6 @@ describe('When the user has some csv or txt files to insert', function () {
         });
     });
 
-
     describe('When the user user the --append flag before --files flag', function () {
 
         beforeEach(function () {
@@ -247,7 +244,6 @@ describe('When the user has some csv or txt files to insert', function () {
                 });
         });
     });
-
 
     describe('When the user uses the --append flag after --files flag', function () {
         beforeEach(function () {
@@ -394,6 +390,28 @@ describe('When the user has some csv or txt files to insert', function () {
                     expect(data).to.deep.equal([{ ID: '1', COUNTRY: 'United States', 'ISO CODES': 'US / USA' },
                     { ID: '2', COUNTRY: 'United Kingdom', 'ISO CODES': 'GB / GBR' },
                     { ID: '3', COUNTRY: 'France', 'ISO CODES': 'FR / FRA' }]);
+                });
+        });
+
+    });
+
+    describe('When the user specifies an extension-less file to be inserted', function () {
+
+        beforeEach(function () {
+            return ensureTablesRemoved(['test3'])
+                .then(() => {
+                    return runCommand('node app.js --files test3');
+                });
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['test3']);
+        });
+
+        it.only('Should have been inserted the data as expected', function () {
+            return connectAndQuery('SELECT * FROM test3')
+                .then(data => {
+                    expect(data).to.deep.equal([{ 'id': '1', 'Name': 'test 1' }]);
                 });
         });
 
