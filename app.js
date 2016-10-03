@@ -33,12 +33,7 @@ function createTable(createTableQuery, parsedData, tableName, connection) {
 function insertRows(tableName, parsedData, connection) {
     let counter = 0;
     parsedData.forEach(row => {
-        let rowToInsert = [];
-        for (let col in row) {
-            rowToInsert.push(row[col]);
-        }
-
-        connection.query(`INSERT INTO ${tableName} VALUES (${rowToInsert.map(x => {
+        connection.query(`INSERT INTO ${tableName} VALUES (${row.map(x => {
             x = x.replace(/"/g, '\\"');
             return '"' + x + '"';
         }).join()})`, error => {
@@ -62,13 +57,13 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                 return;
             }
             let tableName = convertFileNameToTableName(file);
-            parse(csvFile, { columns: true }, (error, data) => {
+            parse(csvFile, (error, data) => {
                 if (error) {
                     console.error(error);
                     return;
                 }
 
-                const colsName = Object.keys(data[0]);
+                const colsName = data[0];
                 let createTableQuery = `CREATE TABLE ${tableName} (`;
                 let connection = mysql.createConnection(DB_CONFIG);
 
@@ -93,12 +88,12 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                             console.error(error);
                             return;
                         }
-                        createTable(createTableQuery, data, tableName, connection);
+                        createTable(createTableQuery, data.slice(1), tableName, connection);
                     });
                 } else if (insertingCase === "--append") {
-                    insertRows(tableName, data, connection);
+                    insertRows(tableName, data.slice(1), connection);
                 } else {
-                    createTable(createTableQuery, data, tableName, connection);
+                    createTable(createTableQuery, data.slice(1), tableName, connection);
                 }
             });
         });
