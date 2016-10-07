@@ -1,10 +1,10 @@
-const mysql = require('mysql'),
+const mysql = require('promise-mysql'),
     expect = require('chai').expect,
     DB_CONFIG = require('../dbconfig.json');
 
 
 describe('When the user has some csv or txt files to insert', function () {
-    this.timeout(5000);
+    this.timeout(1000);
 
     beforeEach(function () {
         return ensureTablesRemoved([
@@ -408,7 +408,7 @@ describe('When the user has some csv or txt files to insert', function () {
             return ensureTablesRemoved(['test3']);
         });
 
-        it.only('Should have been inserted the data as expected', function () {
+        xit('Should have been inserted the data as expected', function () {
             return connectAndQuery('SELECT * FROM test3')
                 .then(data => {
                     expect(data).to.deep.equal([{ 'id': '1', 'Name': 'test 1' }]);
@@ -437,6 +437,28 @@ describe('When the user has some csv or txt files to insert', function () {
         });
     });
 
+
+    describe('When the user specifies a file its name equal to contain backtick', function () {
+        beforeEach(function () {
+            return ensureTablesRemoved(['``'])
+                .then(() => {
+                    return runCommand('node app.js --files specs/data/backtick/`.csv')
+                })
+        });
+
+        afterEach(function () {
+            return ensureTablesRemoved(['``']);
+        });
+
+        it('Should have inserted the file without any error', function () {
+            return connectAndQuery('SELECT * FROM ````;')
+                .then(data => {
+                    expect(data).to.deep.equal([{ id: '1', name: 'Sam Pauline' },
+                    { id: '2', name: 'Kristen Cumberbatch' },
+                    { id: '3', name: 'Roy Borne' }]);
+                });
+        });
+    });
 });
 
 
@@ -461,38 +483,19 @@ function runCommand(command) {
 }
 
 function ensureTablesRemoved(tables) {
-    return new Promise((resolve, reject) => {
-        let connection = mysql.createConnection(DB_CONFIG);
-
-        var numberOfTablesProcessed = 0;
-        tables.forEach(table => {
-            connection.query(`DROP TABLE IF EXISTS \`${table}\``, error => {
-                numberOfTablesProcessed++;
-
-                if (error) {
-                    reject(error);
-                }
-
-                if (numberOfTablesProcessed === tables.length) {
-                    connection.end();
-                    resolve();
-                }
-            });
+    return mysql.createConnection(DB_CONFIG)
+        .then(connection => {
+            return Promise.all(
+                tables.map(table => connection.query(`DROP TABLE IF EXISTS \`${table}\``))
+            ).then(() => connection.end())
         });
-    });
 }
 
 
 function connectAndQuery(query) {
-    return new Promise((resolve, reject) => {
-        let connection = mysql.createConnection(DB_CONFIG);
-        connection.query(query, (error, data) => {
-            connection.end();
-            if (error) {
-                return void reject(error);
-            }
-            resolve(data);
+    return mysql.createConnection(DB_CONFIG)
+        .then(connection => {
+            return connection.query(query).finally(() => connection.end());
         });
-    });
 }
 

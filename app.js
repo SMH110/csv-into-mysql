@@ -1,5 +1,5 @@
 let fs = require('fs'),
-    mysql = require('mysql'),
+    mysql = require('promise-mysql'),
     parse = require('csv-parse');
 
 const DB_CONFIG = require('./dbconfig.json');
@@ -14,43 +14,54 @@ function convertFileNameToTableName(file) {
     if (file.indexOf("/") > -1) {
         file = file.slice(file.lastIndexOf("/") + 1);
     }
+    if (file.indexOf("`") > -1) {
+        file = file.replace(/`/g, "``");
+    }
 
-    file = file.slice(0, -4).replace(/`/g, "``");
-    return "`" + file + "`";
+    return `\`${file.slice(0, -4)}\``;
 }
 
-function createTable(createTableQuery, parsedData, tableName, connection) {
-    connection.query(createTableQuery, error => {
-        if (error) {
-            // If there is an error creating the table the connection never gets closed
-            console.error(error);
-            return;
-        }
-        insertRows(tableName, parsedData, connection);
-    });
+function escape(string) {
+    if (string.indexOf("`") > -1) {
+        string = string.replace(/`/g, "``")
+    }
+
+    if (string.indexOf('"') > -1 || string.indexOf("'") > -1 || string.indexOf(" ") > -1) {
+        string = `\`${string}\``
+    }
+
+    return string
+}
+
+function escapeRows(string) {
+    string = string.replace(/"/g, '""');
+    return `"${string}"`
+}
+
+
+function createTable(tableName, columns, parsedData, connection) {
+
+    return connection.query(`CREATE TABLE ${tableName} (${columns.map(x => `${escape(x)} TEXT`).join()})`)
+        .catch(console.error)
+        .then(() => insertRows(tableName, parsedData, connection));
 }
 
 function insertRows(tableName, parsedData, connection) {
-    let counter = 0;
-    parsedData.forEach(row => {
-        connection.query(`INSERT INTO ${tableName} VALUES (${row.map(x => {
-            x = x.replace(/"/g, '\\"');
-            return '"' + x + '"';
-        }).join()})`, error => {
-            if (++counter === parsedData.length) {
-                connection.end();
-            }
+    return Promise.all(
+        // Could have backticks inside values... =============================================>    YES THAT IS NOT PROBLEM; THERE IS A TEST FRO THAT.
 
-            if (error) {
-                console.error(error);
-                return;
-            }
-        });
-    });
+        parsedData.map(row => {
+            var sql = `INSERT INTO ${tableName} VALUES (${row.map(x => escapeRows(x)).join()})`;
+            connection.query(sql);
+        })
+    )
+        .catch(console.error)
+        .then(() => connection.end());
 }
 
 function readAndParseAndInsert(csvFiles, path, insertingCase) {
     csvFiles.forEach(file => {
+        console.log(`${path}${file}`);
         fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
             if (error) {
                 console.error(error);
@@ -63,38 +74,19 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                     return;
                 }
 
-                const colsName = data[0];
-                let createTableQuery = `CREATE TABLE ${tableName} (`;
-                let connection = mysql.createConnection(DB_CONFIG);
-
-                if (insertingCase !== "--append") {
-                    if (colsName.join().indexOf(" ") > -1 || colsName.join().indexOf("'") > -1 || colsName.join().indexOf('"') > -1) {
-                        for (let column of colsName) {
-
-                            if (column.indexOf(" ") > -1 || column.indexOf("'") > -1 || column.indexOf('"') > -1) {
-                                createTableQuery += '`' + column + '`' + " TEXT, ";
-                            } else {
-                                createTableQuery += column + " TEXT, ";
-                            }
+                const columns = data[0];
+                mysql.createConnection(DB_CONFIG)
+                    .then(connection => {
+                        if (insertingCase === "--overwrite") {
+                            connection.query(`DROP TABLE IF EXISTS ${(tableName)}`)
+                                .catch(console.error)
+                                .then(() => createTable(tableName, columns, data.slice(1), connection));
+                        } else if (insertingCase === "--append") {
+                            insertRows(tableName, data.slice(1), connection);
+                        } else {
+                            createTable(tableName, columns, data.slice(1), connection);
                         }
-                        createTableQuery = createTableQuery.slice(0, -2) + ")";
-                    } else {
-                        createTableQuery += colsName.join(" TEXT, ") + " TEXT)";
-                    }
-                }
-                if (insertingCase === "--overwrite") {
-                    connection.query(`DROP TABLE IF EXISTS ${tableName.replace(/'/g, "\\'")}`, error => {
-                        if (error) {
-                            console.error(error);
-                            return;
-                        }
-                        createTable(createTableQuery, data.slice(1), tableName, connection);
                     });
-                } else if (insertingCase === "--append") {
-                    insertRows(tableName, data.slice(1), connection);
-                } else {
-                    createTable(createTableQuery, data.slice(1), tableName, connection);
-                }
             });
         });
     });
