@@ -400,7 +400,7 @@ describe('When the user has some csv or txt files to insert', function () {
         beforeEach(function () {
             return ensureTablesRemoved(['test3'])
                 .then(() => {
-                    return runCommand('node app.js --files test3');
+                    return runCommand('node app.js --files specs/data/csv_files/test3');
                 });
         });
 
@@ -408,7 +408,7 @@ describe('When the user has some csv or txt files to insert', function () {
             return ensureTablesRemoved(['test3']);
         });
 
-        xit('Should have been inserted the data as expected', function () {
+        it('Should have been inserted the data as expected', function () {
             return connectAndQuery('SELECT * FROM test3')
                 .then(data => {
                     expect(data).to.deep.equal([{ 'id': '1', 'Name': 'test 1' }]);

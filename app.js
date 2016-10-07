@@ -2,6 +2,7 @@ let fs = require('fs'),
     mysql = require('promise-mysql'),
     parse = require('csv-parse');
 
+
 const DB_CONFIG = require('./dbconfig.json');
 
 // function makes any invalid csv's name valid
@@ -18,7 +19,7 @@ function convertFileNameToTableName(file) {
         file = file.replace(/`/g, "``");
     }
 
-    return `\`${file.slice(0, -4)}\``;
+    return file.indexOf(".csv") > -1 || file.indexOf(".txt") > -1 ? `\`${file.slice(0, -4)}\`` : `\`${file}\``;
 }
 
 function escape(string) {
@@ -105,7 +106,7 @@ for (let i = 2; i < args.length; i++) {
     if (args[i] === '--append' || args[i] === '--overwrite') {
         insertingCase = args[i];
     }
-    if ((args[i].indexOf('.csv') > -1 || args[i].indexOf('.txt') > -1) && isUserSpecifiedFilesToInsert) {
+    if ((args[i] !== "--append" && args[i] !== "--overwrite" && args[i] !== "--files") && isUserSpecifiedFilesToInsert) {
         filesToInsert.push(args[i]);
     }
 }
