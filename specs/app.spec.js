@@ -4,20 +4,14 @@ const mysql = require('promise-mysql'),
 
 
 describe('When the user has some csv or txt files to insert', function () {
-    this.timeout(1000);
+    this.timeout(60000);
 
     beforeEach(function () {
-        return ensureTablesRemoved([
-            't1', 't2', 'tr', 'test1', 'test2']
-
-        );
+        return ensureTablesRemoved(['t1', 't2', 'tr', 'test1', 'test2']);
     });
 
     afterEach(function () {
-        return ensureTablesRemoved([
-            't1', 't2', 'tr', 'test1', 'test2']
-
-        );
+        return ensureTablesRemoved(['t1', 't2', 'tr', 'test1', 'test2']);
     });
 
     describe('When the user has some csv files in the files folder and runs the app.js from the command line with no options', function () {
@@ -467,18 +461,15 @@ describe('When the user has some csv or txt files to insert', function () {
 
 function runCommand(command) {
     return new Promise((resolve, reject) => {
-        require('child_process').exec(command, (error, stdout, stderr) => {
+        let child = require('child_process').exec(command, error => {
             if (error) {
-                return void reject(error);
+                reject(error);
+            } else {
+                resolve();
             }
-            if (stdout) {
-                console.log(stdout);
-            }
-            if (stderr) {
-                return void reject(stderr);
-            }
-            return void resolve();
         });
+        child.stdout.on('data', console.log);
+        child.stderr.on('data', console.error);
     });
 }
 

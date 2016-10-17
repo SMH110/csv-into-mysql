@@ -22,7 +22,7 @@ function convertFileNameToTableName(file) {
     return file.indexOf(".csv") > -1 || file.indexOf(".txt") > -1 ? `\`${file.slice(0, -4)}\`` : `\`${file}\``;
 }
 
-function escape(string) {
+function escapeColumnName(string) {
     if (string.indexOf("`") > -1) {
         string = string.replace(/`/g, "``")
     }
@@ -34,7 +34,7 @@ function escape(string) {
     return string
 }
 
-function escapeRows(string) {
+function escapeValue(string) {
     string = string.replace(/"/g, '""');
     return `"${string}"`
 }
@@ -42,27 +42,32 @@ function escapeRows(string) {
 
 function createTable(tableName, columns, parsedData, connection) {
 
-    return connection.query(`CREATE TABLE ${tableName} (${columns.map(x => `${escape(x)} TEXT`).join()})`)
-        .catch(console.error)
+    return connection.query(`CREATE TABLE ${tableName} (${columns.map(x => `${escapeColumnName(x)} TEXT`).join()})`)
+        .catch(error => {
+            console.error(error);
+            connection.end();
+            throw error;
+        })
         .then(() => insertRows(tableName, parsedData, connection));
 }
 
 function insertRows(tableName, parsedData, connection) {
     return Promise.all(
-        // Could have backticks inside values... =============================================>    YES THAT IS NOT PROBLEM; THERE IS A TEST FRO THAT.
-
         parsedData.map(row => {
-            var sql = `INSERT INTO ${tableName} VALUES (${row.map(x => escapeRows(x)).join()})`;
-            connection.query(sql);
+            var sql = `INSERT INTO ${tableName} VALUES (${row.map(x => escapeValue(x)).join()})`;
+            return connection.query(sql);
         })
     )
-        .catch(console.error)
+        .catch(error => {
+            console.error(error);
+            connection.end();
+            throw error;
+        })
         .then(() => connection.end());
 }
 
 function readAndParseAndInsert(csvFiles, path, insertingCase) {
     csvFiles.forEach(file => {
-        console.log(`${path}${file}`);
         fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
             if (error) {
                 console.error(error);
@@ -80,7 +85,11 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                     .then(connection => {
                         if (insertingCase === "--overwrite") {
                             connection.query(`DROP TABLE IF EXISTS ${(tableName)}`)
-                                .catch(console.error)
+                                .catch(error => {
+                                    console.error(error);
+                                    connection.end();
+                                    throw error;
+                                })
                                 .then(() => createTable(tableName, columns, data.slice(1), connection));
                         } else if (insertingCase === "--append") {
                             insertRows(tableName, data.slice(1), connection);
