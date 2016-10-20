@@ -66,6 +66,25 @@ function insertRows(tableName, parsedData, connection) {
         .then(() => connection.end());
 }
 
+// TODO - refactor this (and the 2 functions above)
+function readAndParse(file, path, isToXML) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(`${path}${file}`, 'utf-8', (error, csvFile) => {
+            if (error) {
+                reject(error);
+            } else {
+                parse(csvFile, isToXML ? { columns: true } : null, (error, data) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(data);
+                    }
+                })
+            }
+        })
+    })
+}
+
 function readAndParseAndInsert(csvFiles, path, insertingCase) {
     csvFiles.forEach(file => {
         fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
@@ -102,8 +121,40 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
     });
 }
 
+function writetoXmlFile(parsedData, newXmlFileName) {
+    fs.open(`./files/xml/${newXmlFileName}.xml`, "w", (error) => {
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        let columns = parsedData[0];
+        console.log(columns);
+        let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+        <data>
+        `;
+        for (let i = 1; i < parsedData.length; i++) {
+            for (let j = 0; j < parsedData[i].length; j++) {
+                console.log(columns[j]);
+                xmlContent += `<${newXmlFileName}>
+                <${columns[j]}><${parsedData[i][j]}></${columns[j]}>
+                 </${newXmlFileName}>`
+            }
+        }
+
+        xmlContent += `</data>`
+
+        fs.writeFile(`./files/xml/${newXmlFileName}.xml`, xmlContent, (error) => {
+            if (error) {
+                console.error(error);
+                return;
+            }
+        })
+    })
+}
 let insertingCase,
-    isUserSpecifiedFilesToInsert = false;
+    isUserSpecifiedFilesToInsert = false,
+    isToXML = false;
 
 let args = process.argv,
     filesToInsert = [];
@@ -118,29 +169,55 @@ for (let i = 2; i < args.length; i++) {
     if ((args[i] !== "--append" && args[i] !== "--overwrite" && args[i] !== "--files") && isUserSpecifiedFilesToInsert) {
         filesToInsert.push(args[i]);
     }
+
+    if (args[i] === "--output=xml") {
+        isToXML = true;
+    }
 }
 
 
-if (isUserSpecifiedFilesToInsert) {
-    // in case if someone did : [node app.js --files] and runs the program
-    if (filesToInsert.length) {
-        readAndParseAndInsert(filesToInsert, "./", insertingCase);
+if (!isToXML) {
+    if (isUserSpecifiedFilesToInsert) {
+        // in case if someone did : [node app.js --files] and runs the program
+        if (filesToInsert.length) {
+            readAndParseAndInsert(filesToInsert, "./", insertingCase);
+        } else {
+            console.error(new Error('No CSV or TXT files specified'));
+        }
     } else {
-        console.error(new Error('No CSV or TXT files specified'));
+        fs.readdir('./files/', (error, files) => {
+            if (error) {
+                console.error(error);
+                return;
+            }
+            let csvFiles = files.filter(file => /(\.csv)$/.test(file) || /(\.txt)$/.test(file));
+            if (!csvFiles.length) {
+                console.error(new Error('No CSV or TXT files found'));
+                return;
+            }
+
+            readAndParseAndInsert(csvFiles, "./files/", insertingCase);
+
+        });
     }
 } else {
-    fs.readdir('./files/', (error, files) => {
+
+}
+
+
+
+fs.readFile(`files/t2.csv`, "utf8", (error, csvFile) => {
+    if (error) {
+        console.error(error);
+        return;
+    }
+    let tableName = convertFileNameToTableName("t2.csv");
+    parse(csvFile, (error, data) => {
         if (error) {
             console.error(error);
             return;
         }
-        let csvFiles = files.filter(file => /(\.csv)$/.test(file) || /(\.txt)$/.test(file));
-        if (!csvFiles.length) {
-            console.error(new Error('No CSV or TXT files found'));
-            return;
-        }
 
-        readAndParseAndInsert(csvFiles, "./files/", insertingCase);
-
+        writetoXmlFile(data, tableName)
     });
-}
+})
