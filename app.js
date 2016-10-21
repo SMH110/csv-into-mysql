@@ -1,6 +1,8 @@
-let fs = require('fs'),
+const fs = require('fs'),
     mysql = require('promise-mysql'),
-    parse = require('csv-parse');
+    parse = require('csv-parse'),
+    objectToXml = require('object-to-xml'),
+    path = require('path');
 
 
 const DB_CONFIG = require('./dbconfig.json');
@@ -67,10 +69,16 @@ function insertRows(tableName, parsedData, connection) {
 }
 
 // TODO - refactor this (and the 2 functions above)
-function readAndParse(file, path, isToXML) {
+function readAndParse(filePath, file, isToXML) {
     return new Promise((resolve, reject) => {
-        fs.readFile(`${path}${file}`, 'utf-8', (error, csvFile) => {
+        fs.readFile(`${filePath}${file}`, 'utf-8', (error, csvFile) => {
+            console.log("");
+            console.log("-------->  READING FILE  ", `${filePath}${file}`);
+            console.log("");
             if (error) {
+                console.log("");
+                console.log("--------------!!!  ERROR WHILE READING THE FILE  !!!-------------");
+                console.log("");
                 reject(error);
             } else {
                 parse(csvFile, isToXML ? { columns: true } : null, (error, data) => {
@@ -85,20 +93,11 @@ function readAndParse(file, path, isToXML) {
     })
 }
 
-function readAndParseAndInsert(csvFiles, path, insertingCase) {
+function insertCsvIntoMysql(csvFiles, filePath, insertingCase) {
     csvFiles.forEach(file => {
-        fs.readFile(`${path}${file}`, "utf8", (error, csvFile) => {
-            if (error) {
-                console.error(error);
-                return;
-            }
-            let tableName = convertFileNameToTableName(file);
-            parse(csvFile, (error, data) => {
-                if (error) {
-                    console.error(error);
-                    return;
-                }
-
+        readAndParse(filePath, file, false)
+            .then(data => {
+                let tableName = convertFileNameToTableName(file);
                 const columns = data[0];
                 mysql.createConnection(DB_CONFIG)
                     .then(connection => {
@@ -116,42 +115,49 @@ function readAndParseAndInsert(csvFiles, path, insertingCase) {
                             createTable(tableName, columns, data.slice(1), connection);
                         }
                     });
-            });
-        });
+            })
     });
 }
 
-function writetoXmlFile(parsedData, newXmlFileName) {
-    fs.open(`./files/xml/${newXmlFileName}.xml`, "w", (error) => {
-        if (error) {
-            console.error(error);
-            return;
-        }
-
-        let columns = parsedData[0];
-        console.log(columns);
-        let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-        <data>
-        `;
-        for (let i = 1; i < parsedData.length; i++) {
-            for (let j = 0; j < parsedData[i].length; j++) {
-                console.log(columns[j]);
-                xmlContent += `<${newXmlFileName}>
-                <${columns[j]}><${parsedData[i][j]}></${columns[j]}>
-                 </${newXmlFileName}>`
-            }
-        }
-
-        xmlContent += `</data>`
-
-        fs.writeFile(`./files/xml/${newXmlFileName}.xml`, xmlContent, (error) => {
+function createXmlFile(pathToXML, fileName, option) {
+    return new Promise((resolve, reject) => {
+        fs.open(`${pathToXML}${fileName}`, option, (error) => {
             if (error) {
-                console.error(error);
-                return;
+                console.log("");
+                console.log("--------------!!!  ERROR WHILE CREATING THE FILE  !!!-------------");
+                console.log("");
+                reject(error);
+            } else {
+                resolve();
             }
         })
     })
 }
+
+function prepareXmlToOutput(arrayData, fileName) {
+    let object = { '?xml version="1.0" encoding="UTF-8"?': null, 'data': {} };
+    object[fileName] = arrayData
+
+    return objectToXml(object).replace(/<\/data>/, "").replace(/^\s*\n/m, "") + "</data>";
+}
+
+function writeToXmlFile(path, fileName, xmlData) {
+    return new Promise((resolve, reject) => {
+
+        fs.writeFile(`${path}${fileName}`, xmlData, (error) => {
+            if (error) {
+                console.log("");
+                console.log("--------------!!!  ERROR WHILE WRITING TO THE FILE  !!!-------------");
+                console.log("");
+                reject(error);
+            } else {
+                resolve();
+            }
+        })
+    })
+}
+
+
 let insertingCase,
     isUserSpecifiedFilesToInsert = false,
     isToXML = false;
@@ -166,7 +172,7 @@ for (let i = 2; i < args.length; i++) {
     if (args[i] === '--append' || args[i] === '--overwrite') {
         insertingCase = args[i];
     }
-    if ((args[i] !== "--append" && args[i] !== "--overwrite" && args[i] !== "--files") && isUserSpecifiedFilesToInsert) {
+    if ((args[i] !== "--append" && args[i] !== "--overwrite" && args[i] !== "--files" && args[i] !== "--output=xml") && isUserSpecifiedFilesToInsert) {
         filesToInsert.push(args[i]);
     }
 
@@ -180,7 +186,7 @@ if (!isToXML) {
     if (isUserSpecifiedFilesToInsert) {
         // in case if someone did : [node app.js --files] and runs the program
         if (filesToInsert.length) {
-            readAndParseAndInsert(filesToInsert, "./", insertingCase);
+            insertCsvIntoMysql(filesToInsert, "./", insertingCase);
         } else {
             console.error(new Error('No CSV or TXT files specified'));
         }
@@ -196,28 +202,34 @@ if (!isToXML) {
                 return;
             }
 
-            readAndParseAndInsert(csvFiles, "./files/", insertingCase);
+            insertCsvIntoMysql(csvFiles, "./files/", insertingCase);
 
         });
     }
 } else {
+    if (isUserSpecifiedFilesToInsert) {
+        if (filesToInsert.length) {
+            filesToInsert.forEach(file => {
+                let filePath = path.parse(file);
+                filePath.dir = filePath.dir === "" ? "." : filePath.dir;
+                createXmlFile(`${filePath.dir}/`, `${filePath.name}.xml`, "w")
+                    .then(() => {
+                        readAndParse(`${filePath.dir}/`, `${filePath.base}`, true)
+                            .then(data => prepareXmlToOutput(data, filePath.name))
+                            .then((obj) => {
+                                console.log(obj);
+                                writeToXmlFile(`${filePath.dir}/`, `${filePath.name}.xml`, obj)
+                            })
+                            .catch(error => console.error(error))
+                    })
+            })
+        } else {
+            console.error(new Error('No CSV or TXT files specified'));
+        }
+    } else {
+
+
+
+    }
 
 }
-
-
-
-fs.readFile(`files/t2.csv`, "utf8", (error, csvFile) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-    let tableName = convertFileNameToTableName("t2.csv");
-    parse(csvFile, (error, data) => {
-        if (error) {
-            console.error(error);
-            return;
-        }
-
-        writetoXmlFile(data, tableName)
-    });
-})
