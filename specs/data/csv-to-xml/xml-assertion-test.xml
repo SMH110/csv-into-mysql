@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+    <basic-csv>
+        <Col1>Hi</Col1>
+        <Col2>Bye</Col2>
+    </basic-csv>
+    <basic-csv>
+        <Col1>Foo</Col1>
+        <Col2>Bar</Col2>
+    </basic-csv>
+</data>
