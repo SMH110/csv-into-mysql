@@ -1,6 +1,7 @@
 const mysql = require('promise-mysql'),
     expect = require('chai').expect,
-    DB_CONFIG = require('../dbconfig.json');
+    DB_CONFIG = require('../dbconfig.json'),
+    runCommand = require('../run-command');
 
 
 describe('When the user has some csv or txt files to insert', function () {
@@ -459,19 +460,7 @@ describe('When the user has some csv or txt files to insert', function () {
 
 
 
-function runCommand(command) {
-    return new Promise((resolve, reject) => {
-        let child = require('child_process').exec(command, error => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve();
-            }
-        });
-        child.stdout.on('data', console.log);
-        child.stderr.on('data', console.error);
-    });
-}
+
 
 function ensureTablesRemoved(tables) {
     return mysql.createConnection(DB_CONFIG)
