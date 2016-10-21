@@ -135,6 +135,14 @@ function createXmlFile(pathToXML, fileName, option) {
 }
 
 function prepareXmlToOutput(arrayData, fileName) {
+    for (let obj of arrayData) {
+        for (let prop in obj) {
+            if (prop.indexOf(" ") > -1) {
+                obj[prop.replace(/\s/g, "")] = obj[prop];
+                delete obj[prop];
+            }
+        }
+    }
     let object = { '?xml version="1.0" encoding="UTF-8"?': null, 'data': {} };
     object[fileName] = arrayData
 
