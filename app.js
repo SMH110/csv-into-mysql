@@ -1,4 +1,4 @@
-const readAndParse = require('./lib/read-and-parse'),
+const readFile = require('./lib/read-file'),
     readDirectory = require('./lib/read-directory'),
     path = require('path');
 
@@ -34,9 +34,14 @@ new Promise((resolve, reject) => {
 }).then(files => {
 
     return Promise.all(files.map(filePath => {
-        return readAndParse(filePath).then(csvData => {
-            let writer = output === "xml" ? require("./lib/xml-writer") : require("./lib/mysql-writer");
-            return writer.writer(filePath, csvData, insertingCase)
+
+        return readFile(filePath).then(data => {
+            let parser = /\.xml$/.test(filePath) ? require('./lib/xml-parser') : require('./lib/csv-parser');
+            return parser(data).then(data => {
+                let writer = output === "xml" ? require("./lib/xml-writer") : require("./lib/mysql-writer");
+                return writer.writer(filePath, data, insertingCase)
+            })
+
         })
             .catch(console.error)
     }));
