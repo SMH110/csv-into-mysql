@@ -478,4 +478,3 @@ function connectAndQuery(query) {
             return connection.query(query).finally(() => connection.end());
         });
 }
-

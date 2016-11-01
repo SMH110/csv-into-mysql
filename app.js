@@ -1,6 +1,5 @@
 const readAndParse = require('./lib/read-and-parse'),
-    csvToXml = require('./lib/csv-to-xml'),
-    reaDirectory = require('./lib/read-directory'),
+    readDirectory = require('./lib/read-directory'),
     path = require('path');
 
 let insertingCase,
@@ -30,20 +29,16 @@ new Promise((resolve, reject) => {
     if (filesToInsert.length && isUserSpecifiedFilesToInsert) {
         resolve(filesToInsert)
     } else {
-        resolve(reaDirectory('./files/').then(files => files.map(file => `./files/${file}`)))
-            .catch(error => { reject(error) })
+        resolve(readDirectory('./files/').then(files => files.map(file => `./files/${file}`)))
     }
 }).then(files => {
 
     return Promise.all(files.map(filePath => {
-        // TODO...
-        // output being passed into readAndParse shows that the interface
-        // of the 2 writers is not the same (as the data they take is in a different shape)
-        // and therefore they are not polymorphic.
-        return readAndParse(filePath, output).then(csvData => {
-            let writer = output === "xml" ? require("./lib/csv-to-xml") : require("./lib/csv-to-mysql");
-            return writer.interface_(filePath, csvData, insertingCase)
-        });
+        return readAndParse(filePath).then(csvData => {
+            let writer = output === "xml" ? require("./lib/xml-writer") : require("./lib/mysql-writer");
+            return writer.writer(filePath, csvData, insertingCase)
+        })
+            .catch(console.error)
     }));
 })
-    .catch(console.error)
+

@@ -64,43 +64,43 @@ describe('CSV to XML', function () {
 
         describe('When the user converts a CSV file which contain a different characters in the column name -which need to be escaped- into a XML file', function () {
             beforeEach(() => {
-                return runCommand('node app.js --output=xml --files specs/data/csv-to-xml/csv-characters-need-be-escaped.csv');
+                return runCommand('node app.js --output=xml --files specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.csv');
             });
 
             afterEach(() => {
-                return deleteFileIfExists('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml');
+                return deleteFileIfExists('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml');
             });
 
             it('Should output the XML file as expected', () => {
-                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml').then(xml => {
-                    expect(xml.data['csv-characters-need-be-escaped'].count()).to.equal(2);
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).Col1.text()).to.equal('Hi')
+                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml').then(xml => {
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].count()).to.equal(2);
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).Col1.text()).to.equal('Hi')
                 });
             });
 
             it('Should remove all the invalid characters from the beginning of the columns name', () => {
-                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml').then(xml => {
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).Col2.text()).to.equal('Bye')
+                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml').then(xml => {
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).Col2.text()).to.equal('Bye')
                 });
             });
 
 
             it('Should remove all the invalid characters from the columns name', () => {
-                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml').then(xml => {
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).Col1.text()).to.equal('Hi')
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).Col4.text()).to.equal('Boat')
+                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml').then(xml => {
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).Col1.text()).to.equal('Hi')
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).Col4.text()).to.equal('Boat')
                 });
             });
 
             it('Should remove all invalid characters from the beginning of the column name like numbers and hyphen...etc', () => {
-                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml').then(xml => {
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).Col5.text()).to.equal('Float')
+                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml').then(xml => {
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).Col5.text()).to.equal('Float')
                 });
             });
 
             it('Should Auto rename the column name if there was no name left after removing all the invalid Characters from the beginning of the column name', () => {
-                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped.xml').then(xml => {
-                    expect(xml.data['csv-characters-need-be-escaped'].at(0).AutoColumnName_0.text()).to.equal('Note')
+                return getXml('./specs/data/csv-to-xml/csv-characters-need-be-escaped-in-the-head.xml').then(xml => {
+                    expect(xml.data['csv-characters-need-be-escaped-in-the-head'].at(0).AutoColumnName_0.text()).to.equal('Note')
                 });
             });
         });
