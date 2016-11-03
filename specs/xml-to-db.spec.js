@@ -1,7 +1,7 @@
 const expect = require('chai').expect,
-    runCommand = require('../run-command'),
-    connectAndQuery = require('../connect-and-query'),
-    ensureTablesRemoved = require('../ensure-tables-removed');
+    runCommand = require('./run-command'),
+    connectAndQuery = require('./connect-and-query'),
+    ensureTablesRemoved = require('./ensure-tables-removed');
 
 
 describe('XML to Mysql', function () {

@@ -1,4 +1,4 @@
-const DB_CONFIG = require('./dbconfig.json'),
+const DB_CONFIG = require('../dbconfig.json'),
     mysql = require('promise-mysql');
 
 

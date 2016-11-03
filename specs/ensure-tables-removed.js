@@ -1,4 +1,4 @@
-const DB_CONFIG = require('./dbconfig.json'),
+const DB_CONFIG = require('../dbconfig.json'),
     mysql = require('promise-mysql');
 module.exports = function (tables) {
     return mysql.createConnection(DB_CONFIG)
