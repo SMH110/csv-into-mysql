@@ -1,4 +1,4 @@
-const readAndParse = require('./lib/read-and-parse'),
+const readFile = require('./lib/read-file'),
     readDirectory = require('./lib/read-directory'),
     path = require('path');
 
@@ -27,18 +27,20 @@ for (let i = 2; i < args.length; i++) {
 
 new Promise((resolve, reject) => {
     if (filesToInsert.length && isUserSpecifiedFilesToInsert) {
-        resolve(filesToInsert)
+        resolve(filesToInsert);
     } else {
-        resolve(readDirectory('./files/').then(files => files.map(file => `./files/${file}`)))
+        resolve(readDirectory('./files/').then(files => files.map(file => `./files/${file}`)));
     }
 }).then(files => {
-
     return Promise.all(files.map(filePath => {
-        return readAndParse(filePath).then(csvData => {
-            let writer = output === "xml" ? require("./lib/xml-writer") : require("./lib/mysql-writer");
-            return writer.writer(filePath, csvData, insertingCase)
+        return readFile(filePath).then(data => {
+            let parser = /\.xml$/.test(filePath) ? require('./lib/xml-parser') : require('./lib/csv-parser');
+            return parser(data).then(data => {
+                let writer = output === "xml" ? require("./lib/xml-writer") : require("./lib/mysql-writer");
+                return writer.writer(filePath, data, insertingCase)
+            });
         })
-            .catch(console.error)
+            .catch(console.error);
     }));
 })
 

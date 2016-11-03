@@ -1,6 +1,6 @@
 const expect = require('chai').expect,
     fs = require('fs'),
-    runCommand = require('../run-command'),
+    runCommand = require('./run-command'),
     xmlReader = require('xmlreader');
 
 

@@ -4,7 +4,8 @@
   "dependencies": {
     "csv-parse": "^1.1.7",
     "object-to-xml": "^1.1.0",
-    "promise-mysql": "^1.3.2"
+    "promise-mysql": "^1.3.2",
+    "xml2js": "^0.4.17"
   },
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha specs --require mocha-setup.js"

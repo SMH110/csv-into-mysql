@@ -1,7 +1,7 @@
-const mysql = require('promise-mysql'),
-    expect = require('chai').expect,
-    DB_CONFIG = require('../dbconfig.json'),
-    runCommand = require('../run-command');
+const expect = require('chai').expect,
+    runCommand = require('./run-command'),
+    connectAndQuery = require('./connect-and-query'),
+    ensureTablesRemoved = require('./ensure-tables-removed');
 
 
 describe('When the user has some csv or txt files to insert', function () {
@@ -433,7 +433,7 @@ describe('When the user has some csv or txt files to insert', function () {
     });
 
 
-    describe('When the user specifies a file its name equal to contain backtick', function () {
+    describe('When the user specifies a file its name equal or contain backtick', function () {
         beforeEach(function () {
             return ensureTablesRemoved(['``'])
                 .then(() => {
@@ -462,19 +462,5 @@ describe('When the user has some csv or txt files to insert', function () {
 
 
 
-function ensureTablesRemoved(tables) {
-    return mysql.createConnection(DB_CONFIG)
-        .then(connection => {
-            return Promise.all(
-                tables.map(table => connection.query(`DROP TABLE IF EXISTS \`${table}\``))
-            ).then(() => connection.end())
-        });
-}
 
 
-function connectAndQuery(query) {
-    return mysql.createConnection(DB_CONFIG)
-        .then(connection => {
-            return connection.query(query).finally(() => connection.end());
-        });
-}
